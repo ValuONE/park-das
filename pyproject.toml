@@ -1,0 +1,14 @@
+﻿[project]
+name = "park-das"
+version = "0.1.0"
+authors = [
+    {name = "Dennis Itzel", email = "dennis.itzel@uni-ulm.de"},
+    {name = "Alexander Epple", email = "alexander.epple@uni-ulm.de"},
+    {name = "Valentin Piendl", email = "valentin.piendl@uni-ulm.de"}
+]
+readme = "README.md"
+requires-python = "==3.10"
+
+dependencies = [
+    "pyTelegramBotAPI ==4.27.0"
+]
