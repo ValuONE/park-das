@@ -2,40 +2,40 @@
 import telebot
 from telebot import types
 
-class ParkBot(object):
-    _instance = None
+class ParkBot:
 
-    def __new__(cls):
-        """
-        Singleton für Zugriff auf Bot API
-        """
-        if cls._instance is None:
-            cls._instance = super(ParkBot, cls).__new__(cls)
+    def __init__(self) -> None:
+        try:
+            token = os.environ["TOKEN"]
+        except KeyError:
+            raise ValueError("TOKEN environment variable is not set or is empty.")
 
-            try:
-                token = os.environ["TOKEN"]
-            except KeyError:
-                raise ValueError("TOKEN environment variable is not set or is empty.")
+        self._bot = telebot.TeleBot(token)
 
-            cls._bot = telebot.TeleBot(token)
-
-        return cls._instance
-
-    @property
-    def bot(cls) -> telebot.TeleBot:
-        """
-        Getter für Bot API
-        """
-        return cls._bot
-
-    @classmethod
-    def setup(cls):
-        """
-        Bot Setup, bspw. setzen der Kommandos
-        """
-        cls().bot.set_my_commands(
+        # TODO: Add additional commands when implementing
+        self._bot.set_my_commands(
             [
                 types.BotCommand("start", "Initalisiert den Bot und listet verfügbare Kommandos auf."),
                 types.BotCommand("help", "Listet verfügbare Kommandos auf."),
             ]
         )
+
+    def __del__(self):
+        self._bot.stop_polling()
+        del self._bot
+
+    def __enter__(self) -> telebot.TeleBot:
+        return self._bot
+
+    def __exit__(self, exception_type, exception_val, trace):
+        return True
+
+    @property
+    def api(self) -> telebot.TeleBot:
+        """
+        Getter für Bot API
+        """
+        return self._bot
+
+# Global instance to be used when doing anything with the API
+bot = ParkBot()
