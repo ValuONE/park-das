@@ -1,4 +1,6 @@
-﻿import src.park_das.bot as bot
+﻿from src.park_das.bot import ParkBot
+from src.park_das.handlers import *
 
 if __name__ == "__main__":
-    bot.start()
+    ParkBot().setup()
+    ParkBot().bot.infinity_polling()
