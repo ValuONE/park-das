@@ -39,10 +39,9 @@ def nav_helper(message: types.Message):
             ratio = free / total
             if ratio > 0.25:
                 return "✅"
-            elif ratio < 0.25 and ratio > 0.05:
+            if 0.05 < ratio < 0.25:
                 return "⚠️"
-            else:
-                return "❌"
+            return "❌"
 
         spots = {f"{emojify(spot.free_spaces, spot.total_spaces)} " +
                  f"{spot.name.name}: {spot.free_spaces}": {
