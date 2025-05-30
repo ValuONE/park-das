@@ -8,7 +8,7 @@ pylint:
   script:
     - pip install pylint poetry
     - poetry install
-    - pylint **/*.py
+    - poetry run pylint **/*.py
   allow_failure: false
 
 docker:
