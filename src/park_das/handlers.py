@@ -42,11 +42,7 @@ def nav_helper(message: types.Message):
 
         match(MapProviders.GOOGLE):
             case MapProviders.GOOGLE:
-                spots_msg = api.send_message(message.chat.id,
-                                             "Verfügbare Parkplätze:",
-                                             reply_markup=spots_buttons)
+                bot.update_inline_buttons(api.send_message(message.chat.id,
+                    "Verfügbare Parkplätze:", reply_markup=spots_buttons))
             case MapProviders.APPLE:
-                spots_msg = api.send_message(message.chat.id, "Not yet implemented!")
-
-        api.register_next_step_handler(spots_msg,
-            lambda x : api.delete_message(spots_msg.chat.id, spots_msg.message_id))
+                api.send_message(message.chat.id, "Not yet implemented!")
