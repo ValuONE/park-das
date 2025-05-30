@@ -1,6 +1,6 @@
 ﻿from enum import Enum
 
-PARKING_SPACE_LOCATIONS = {
+CAR_PARK_LOCATIONS = {
     "P09": (48.41912, 9.942359),
     "P10": (48.42005, 9.943917),
     "P11": (48.42046, 9.944910),
@@ -22,7 +22,7 @@ PARKING_SPACE_LOCATIONS = {
     "M4": (48.40974, 9.994923)
 }
 
-class ParkingSpaces(Enum):
+class CarParkNames(Enum):
     P09 = "P09"
     P10 = "P10"
     P11 = "P11"
@@ -43,5 +43,5 @@ class ParkingSpaces(Enum):
     M3 = "M3"
     M4 = "M4"
 
-    def get_position_by_type(self) -> tuple[float, float]:
-        return PARKING_SPACE_LOCATIONS[self.value]
+    def get_pos(self) -> tuple[float, float]:
+        return CAR_PARK_LOCATIONS[self.value]
