@@ -1,22 +1,27 @@
 ﻿import os
+
 import telebot
 from telebot import types
 
 class ParkBot:
-
     def __init__(self) -> None:
         try:
             token = os.environ["TOKEN"]
-        except KeyError:
-            raise ValueError("TOKEN environment variable is not set or is empty.")
+        except KeyError as e:
+            raise ValueError("TOKEN environment variable is not set or is empty.") from e
 
         self._bot = telebot.TeleBot(token)
 
-        # TODO: Add additional commands when implementing
         self._bot.set_my_commands(
             [
-                types.BotCommand("start", "Initalisiert den Bot und listet verfügbare Kommandos auf."),
-                types.BotCommand("help", "Listet verfügbare Kommandos auf."),
+                types.BotCommand(
+                    "start",
+                    "Initalisiert den Bot und listet verfügbare Kommandos auf."
+                ),
+                types.BotCommand(
+                    "help",
+                    "Listet verfügbare Kommandos auf."
+                ),
             ]
         )
 
@@ -36,6 +41,7 @@ class ParkBot:
         Getter für Bot API
         """
         return self._bot
+
 
 # Global instance to be used when doing anything with the API
 bot = ParkBot()
