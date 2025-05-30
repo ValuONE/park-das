@@ -15,10 +15,6 @@ class CarPark:
     name: CarParkNames
     free_spaces: int
 
-    def __init__(self, name: CarParkNames, left_spaces: int):
-        self.name = name
-        self.free_spaces = left_spaces
-
     def get_pos(self) -> (float, float):
         """
        Returns the geographic position (latitude, longitude) of the car park.
