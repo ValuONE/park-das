@@ -6,6 +6,8 @@ pylint:
   stage: lint
   image: registry.gitlab.com/pipeline-components/pylint:latest
   script:
+    - pip install poetry
+    - poetry install
     - pylint **/*.py
   allow_failure: false
 
