@@ -10,4 +10,5 @@ def build_googlemaps_url(location : Tuple[float, float]) -> str:
         str: Google Maps Link
     """
     # https://developers.google.com/maps/documentation/urls/get-started?hl=de#directions-action
-    return f"https://www.google.com/maps/dir/?api=1&destination={location[0]},{location[1]}&travelmode=driving"
+    return "https://www.google.com/maps/dir/?api=1" +\
+            f"&destination={location[0]},{location[1]}&travelmode=driving"
