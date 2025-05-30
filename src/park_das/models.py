@@ -1,6 +1,7 @@
 ﻿import dataclasses
+from typing import Tuple
 
-from park_das.car_park_constants import CarParkNames
+from .constants import CarParkNames
 
 
 @dataclasses.dataclass
@@ -15,7 +16,7 @@ class CarPark:
     name: CarParkNames
     free_spaces: int
 
-    def get_pos(self) -> (float, float):
+    def get_pos(self) -> Tuple[float, float]:
         """
        Returns the geographic position (latitude, longitude) of the car park.
     

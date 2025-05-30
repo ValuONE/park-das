@@ -22,6 +22,10 @@ class ParkBot:
                     "help",
                     "Listet verfügbare Kommandos auf."
                 ),
+                types.BotCommand(
+                    "navigation",
+                    "Listet alle verfügbaren Parkplätze als navigierbare Buttons auf."
+                )
             ]
         )
 

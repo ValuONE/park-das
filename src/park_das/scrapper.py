@@ -4,8 +4,8 @@ from typing import List
 
 from crawl4ai import AsyncWebCrawler, JsonCssExtractionStrategy, CrawlerRunConfig, CacheMode
 
-from park_das.car_park_constants import get_variant_from_str
-from park_das.models import CarPark
+from .constants import CarParkNames
+from .models import CarPark
 
 VISITOR_URL = "http://tsu-app.rrooaarr.biz/front/index.html"
 WORKER_URL = "http://tsu-app.rrooaarr.biz/front/mitarbeiter.html"
@@ -70,9 +70,9 @@ async def fetch_data_async(is_visitor: bool) -> List[CarPark]:
             return parking_data
 
         for item in json.loads(result.extracted_content):
-            name = item["name"]
-            numbers = item["p_number"]
-            free_spaces = item["free_spaces"]
+            name : str = item["name"]
+            numbers : str = item["p_number"]
+            free_spaces : str = item["free_spaces"]
 
             if not name or not numbers or not free_spaces:
                 continue
@@ -80,8 +80,11 @@ async def fetch_data_async(is_visitor: bool) -> List[CarPark]:
             if name == "" or numbers == "" or free_spaces == "":
                 continue
 
+            if numbers.startswith("M"):
+                continue
+
             parking_data.append(
-                CarPark(get_variant_from_str(name + " " + numbers), int(free_spaces))
+                CarPark(CarParkNames.parse(f"{name} {numbers}"), int(free_spaces))
             )
 
 
