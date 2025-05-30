@@ -1,6 +1,7 @@
 ﻿import json
 import asyncio
 from typing import List
+from re import search
 
 from crawl4ai import AsyncWebCrawler, JsonCssExtractionStrategy, CrawlerRunConfig, CacheMode
 
@@ -31,6 +32,13 @@ schema = {
         {
             "name": "free_spaces",
             "selector": ".free-number",
+            "type": "text",
+            "transform": "strip",
+            "default": ""
+        },
+        {
+            "name": "total_spaces",
+            "selector": "a > small",
             "type": "text",
             "transform": "strip",
             "default": ""
@@ -73,6 +81,7 @@ async def fetch_data_async(is_visitor: bool) -> List[CarPark]:
             name : str = item["name"]
             numbers : str = item["p_number"]
             free_spaces : str = item["free_spaces"]
+            total_spaces : str = search(r'\d+', item["total_spaces"]).group()
 
             if not name or not numbers or not free_spaces:
                 continue
@@ -84,7 +93,8 @@ async def fetch_data_async(is_visitor: bool) -> List[CarPark]:
                 continue
 
             parking_data.append(
-                CarPark(CarParkNames.parse(f"{name} {numbers}"), int(free_spaces))
+                CarPark(CarParkNames.parse(f"{name} {numbers}"),
+                        int(free_spaces), int(total_spaces))
             )
 
 

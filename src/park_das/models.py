@@ -15,6 +15,7 @@ class CarPark:
     """
     name: CarParkNames
     free_spaces: int
+    total_spaces: int
 
     def get_pos(self) -> Tuple[float, float]:
         """

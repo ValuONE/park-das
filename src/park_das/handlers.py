@@ -35,14 +35,24 @@ def nav_helper(message: types.Message):
 
     with bot as api:
 
-        spots = {f"{spot.name.name} : {spot.free_spaces}": {
+        def emojify(free, total):
+            ratio = free / total
+            if ratio > 0.25:
+                return "✅"
+            elif ratio < 0.25 and ratio > 0.05:
+                return "⚠️"
+            else:
+                return "❌"
+
+        spots = {f"{emojify(spot.free_spaces, spot.total_spaces)} " +
+                 f"{spot.name.name}: {spot.free_spaces}": {
             "url" : build_googlemaps_url(spot.get_pos())
             } for spot in parking_spots}
         spots_buttons = util.quick_markup(spots, row_width=floor(sqrt(len(parking_spots))))
 
         match(MapProviders.GOOGLE):
             case MapProviders.GOOGLE:
-                bot.update_inline_buttons(api.send_message(message.chat.id,
+                bot.update_inline_buttons(message.from_user, api.send_message(message.chat.id,
                     "Verfügbare Parkplätze:", reply_markup=spots_buttons))
             case MapProviders.APPLE:
                 api.send_message(message.chat.id, "Not yet implemented!")

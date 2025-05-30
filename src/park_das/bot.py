@@ -29,7 +29,7 @@ class ParkBot:
             ]
         )
 
-        self._buttons_msg = None
+        self._buttons_msgs = {}
 
     def __del__(self):
         self._bot.stop_polling()
@@ -48,16 +48,18 @@ class ParkBot:
         """
         return self._bot
 
-    def update_inline_buttons(self, message : types.Message):
+    def update_inline_buttons(self, user : types.User, message : types.Message):
         """
         Entfernt alte Inline Buttons falls vorhanden.
         
         Args:
             message (Message) : Neue Nachricht mit Inline Keyboard
         """
-        if self._buttons_msg is not None:
-            self._bot.delete_message(self._buttons_msg.chat.id, self._buttons_msg.message_id)
-        self._buttons_msg = message
+        if user.id in self._buttons_msgs:
+            self._bot.delete_message(self._buttons_msgs[user.id].chat.id,
+                                     self._buttons_msgs[user.id].message_id)
+            del self._buttons_msgs[user.id]
+        self._buttons_msgs[user.id] = message
 
 
 # Global instance to be used when doing anything with the API
