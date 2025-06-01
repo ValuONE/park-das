@@ -5,6 +5,7 @@ from telebot import types, util
 from .navigation_builders import build_googlemaps_url
 from .scrapper import fetch_data
 from .constants import MapProviders
+from .distance import simple_distance
 from .bot import bot
 
 
@@ -47,21 +48,45 @@ def live_handler(message: types.Message):
 @bot.api.message_handler(content_types=["location"])
 def location_handler(message: types.Message):
     """
-    Returns the user's current location he sent to the bot.
+    Receives user's location and returns sorted car parks.
     """
-    if not message.location:       # Safety-Check
+    if not message.location:
         return
 
     lat = message.location.latitude
     lon = message.location.longitude
 
+    # Gets the parking data
+    carparks = fetch_data(is_visitor=True)
+
+    # Calculates distances to each parking slot
+    carparks_with_distance = []
+    for carpark in carparks:
+        park_lat, park_lon = carpark.get_pos()
+        distance = simple_distance(lat, lon, park_lat, park_lon)
+        carparks_with_distance.append((carpark, distance))
+
+    # Sorts the car slots by distance
+    carparks_with_distance.sort(key=lambda x: x[1])
+
+    # creates the response message
+    response = "🚗 Nächste Parkplätze:\n\n"
+    for carpark, distance in carparks_with_distance:
+        response += \
+            (
+                f"{carpark.name.value}: "
+                f"{carpark.free_spaces} frei — "
+                f"{distance:.1f} km entfernt\n"
+            )
+
     remove_keyboard = types.ReplyKeyboardRemove()
 
+    # Sends the response message
     with bot as api:
         api.send_message(
             message.chat.id,
-            f"Dein aktueller Standort:\n• Breitengrad: {lat}\n• Längengrad: {lon}",
-            reply_markup=remove_keyboard,
+            response,
+            reply_markup=remove_keyboard
         )
 
 @bot.api.message_handler(commands=["navigation"])
