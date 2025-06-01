@@ -1,6 +1,6 @@
 from telebot import types
-from .bot import bot
 from park_das.distance import simple_distance
+from .bot import bot
 from .scrapper import fetch_data
 
 
@@ -67,10 +67,16 @@ def location_handler(message: types.Message):
     # creates the response message
     response = "🚗 Nächste Parkplätze:\n\n"
     for carpark, distance in carparks_with_distance:
-        response += f"{carpark.name.value}: {carpark.free_spaces} frei — {distance:.1f} km entfernt\n"
+        response += \
+            (
+                f"{carpark.name.value}: "
+                f"{carpark.free_spaces} frei — "
+                f"{distance:.1f} km entfernt\n"
+            )
 
     remove_keyboard = types.ReplyKeyboardRemove()
 
+    # Sends the response message
     with bot as api:
         api.send_message(
             message.chat.id,
