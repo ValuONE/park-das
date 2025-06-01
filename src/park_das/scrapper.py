@@ -1,11 +1,12 @@
 ﻿import json
 import asyncio
 from typing import List
+from re import search
 
 from crawl4ai import AsyncWebCrawler, JsonCssExtractionStrategy, CrawlerRunConfig, CacheMode
 
-from park_das.car_park_constants import get_variant_from_str
-from park_das.models import CarPark
+from .constants import CarParkNames
+from .models import CarPark
 
 VISITOR_URL = "http://tsu-app.rrooaarr.biz/front/index.html"
 WORKER_URL = "http://tsu-app.rrooaarr.biz/front/mitarbeiter.html"
@@ -31,6 +32,13 @@ schema = {
         {
             "name": "free_spaces",
             "selector": ".free-number",
+            "type": "text",
+            "transform": "strip",
+            "default": ""
+        },
+        {
+            "name": "total_spaces",
+            "selector": "a > small",
             "type": "text",
             "transform": "strip",
             "default": ""
@@ -70,9 +78,10 @@ async def fetch_data_async(is_visitor: bool) -> List[CarPark]:
             return parking_data
 
         for item in json.loads(result.extracted_content):
-            name = item["name"]
-            numbers = item["p_number"]
-            free_spaces = item["free_spaces"]
+            name : str = item["name"]
+            numbers : str = item["p_number"]
+            free_spaces : str = item["free_spaces"]
+            total_spaces : str = search(r'\d+', item["total_spaces"]).group()
 
             if not name or not numbers or not free_spaces:
                 continue
@@ -81,7 +90,8 @@ async def fetch_data_async(is_visitor: bool) -> List[CarPark]:
                 continue
 
             parking_data.append(
-                CarPark(get_variant_from_str(name + " " + numbers), int(free_spaces))
+                CarPark(CarParkNames.parse(f"{name} {numbers}"),
+                        int(free_spaces), int(total_spaces))
             )
 
 
