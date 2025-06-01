@@ -2,12 +2,12 @@ from typing import Tuple
 
 def build_googlemaps_url(location : Tuple[float, float]) -> str:
     """
-    Erstellt navigierbaren Google Maps Link
+    Creates a routable link to the provided location on google maps
 
     Args:
         target (location) : Lat & Lon
     Returns:
-        str: Google Maps Link
+        str: Routable link
     """
     # https://developers.google.com/maps/documentation/urls/get-started?hl=de#directions-action
     return "https://www.google.com/maps/dir/?api=1" +\

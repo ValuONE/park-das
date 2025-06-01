@@ -44,16 +44,17 @@ class ParkBot:
     @property
     def api(self) -> telebot.TeleBot:
         """
-        Getter für Bot API
+        Access to the bot API
         """
         return self._bot
 
     def update_inline_buttons(self, user : types.User, message : types.Message):
         """
-        Entfernt alte Inline Buttons falls vorhanden.
+        Ensures only one set of inline buttons is present.
         
         Args:
-            message (Message) : Neue Nachricht mit Inline Keyboard
+            user (User) : User the inline buttons are sent to
+            message (Message) : New message containing inline buttons
         """
         if user.id in self._buttons_msgs:
             self._bot.delete_message(self._buttons_msgs[user.id].chat.id,

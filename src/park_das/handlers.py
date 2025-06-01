@@ -54,4 +54,4 @@ def nav_helper(message: types.Message):
                 bot.update_inline_buttons(message.from_user, api.send_message(message.chat.id,
                     "Verfügbare Parkplätze:", reply_markup=spots_buttons))
             case MapProviders.APPLE:
-                api.send_message(message.chat.id, "Not yet implemented!")
+                api.send_message(message.chat.id, "Noch nicht implementiert!")

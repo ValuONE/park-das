@@ -89,9 +89,6 @@ async def fetch_data_async(is_visitor: bool) -> List[CarPark]:
             if name == "" or numbers == "" or free_spaces == "":
                 continue
 
-            if numbers.startswith("M"):
-                continue
-
             parking_data.append(
                 CarPark(CarParkNames.parse(f"{name} {numbers}"),
                         int(free_spaces), int(total_spaces))
