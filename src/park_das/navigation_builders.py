@@ -2,10 +2,8 @@ from typing import Tuple
 
 def build_googlemaps_url(location : Tuple[float, float]) -> str:
     """
-    Creates a routable link to the provided location on google maps
+    Creates a routable link to the provided location on Google Maps
 
-    Args:
-        target (location) : Lat & Lon
     Returns:
         str: Routable link
     """
