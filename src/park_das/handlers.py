@@ -47,8 +47,11 @@ def live_handler(message: types.Message):
 
 @bot.api.message_handler(content_types=["location"])
 def location_handler(message: types.Message):
-    """
-    Receives user's location and returns sorted car parks.
+    """Handles the user‑shared location from the *live* flow.
+
+    Computes the distance to every car park, sorts the list *ascending* by
+    distance and finally replies with an **inline‑keyboard** (one button per
+    park) – exactly like */navigation*, just ordered by proximity.
     """
     if not message.location:
         return
@@ -57,7 +60,7 @@ def location_handler(message: types.Message):
     lon = message.location.longitude
 
     # Gets the parking data
-    carparks = fetch_data(is_visitor=True)
+    carparks = fetch_data(is_visitor=False)
 
     # Calculates distances to each parking slot
     carparks_with_distance = []
@@ -66,28 +69,48 @@ def location_handler(message: types.Message):
         distance = simple_distance(lat, lon, park_lat, park_lon)
         carparks_with_distance.append((carpark, distance))
 
-    # Sorts the car slots by distance
+    # Sorts the car slots by distance (ascending)
     carparks_with_distance.sort(key=lambda x: x[1])
 
-    # creates the response message
-    response = "🚗 Nächste Parkplätze:\n\n"
-    for carpark, distance in carparks_with_distance:
-        response += \
-            (
-                f"{carpark.name.value}: "
-                f"{carpark.free_spaces} frei — "
-                f"{distance:.1f} km entfernt\n"
-            )
-
-    remove_keyboard = types.ReplyKeyboardRemove()
-
-    # Sends the response message
     with bot as api:
-        api.send_message(
-            message.chat.id,
-            response,
-            reply_markup=remove_keyboard
+
+        def emojify(free: int, total: int) -> str:
+            ratio = free / total
+            if ratio > 0.25:
+                return "✅"
+            if 0.05 < ratio < 0.25:
+                return "⚠️"
+            return "❌"
+
+        spots = {
+            f"{emojify(carpark.free_spaces, carpark.total_spaces)} "  # Availability symbol
+            f"{carpark.name.value}: {carpark.free_spaces} | "         # Text
+            f"{distance:.1f} km": {
+                "url": build_googlemaps_url(carpark.get_pos())
+            }
+            for carpark, distance in carparks_with_distance
+        }
+
+        spots_buttons = util.quick_markup(
+            spots,
+            row_width=floor(sqrt(len(spots))) if spots else 1
         )
+
+        match(MapProviders.GOOGLE):
+            case MapProviders.GOOGLE:
+                bot.update_inline_buttons(
+                    message.from_user,
+                    api.send_message(
+                        message.chat.id,
+                        "Nächste Parkplätze:",
+                        reply_markup=spots_buttons,
+                    ),
+                )
+            case MapProviders.APPLE:
+                api.send_message(
+                    message.chat.id,
+                    "Noch nicht implementiert!"
+                )
 
 @bot.api.message_handler(commands=["navigation"])
 def nav_helper(message: types.Message):
