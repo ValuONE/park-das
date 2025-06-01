@@ -1,4 +1,4 @@
-﻿from enum import Enum
+﻿from enum import Enum, auto
 
 class CarParkNames(Enum):
     P09 = "Parkplatz P09"
@@ -24,11 +24,12 @@ class CarParkNames(Enum):
     def get_pos(self) -> tuple[float, float]:
         return CAR_PARK_LOCATIONS[self]
 
-def get_variant_from_str(value: str) -> CarParkNames:
-    for member in CarParkNames:
-        if member.value == value:
-            return member
-    raise KeyError(f"No matching enum member for '{value}' found.")
+    @classmethod
+    def parse(cls, value):
+        for member in CarParkNames:
+            if member.value == value:
+                return member
+        raise KeyError(f"No matching enum member for '{value}' found.")
 
 CAR_PARK_LOCATIONS = {
         CarParkNames.P09: (48.41912, 9.942359),
@@ -51,3 +52,8 @@ CAR_PARK_LOCATIONS = {
         CarParkNames.M3: (48.41076, 9.99374),
         CarParkNames.M4: (48.40974, 9.994923)
 }
+
+class MapProviders(Enum):
+    APPLE = auto()
+    GOOGLE = auto()
+    UNDEFINED = auto()
