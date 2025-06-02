@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from telebot.types import Location
+from telebot.types import Location, User
 from .constants import CarParkNames, UserLanguage, UserType, MapProvider
 
 
@@ -43,12 +43,21 @@ class UserSettings:
     last_location: Optional[Location] = None
     inline_button: Optional[InlineButtons] = None
 
+    def __str__(self) -> str:
+        return "\n".join(
+            [
+                f"Gewählte Sprache:\t\t{str(self.language)}",
+                f"Karten Präferenz:\t\t{str(self.map_provider)}",
+                f"Nutzer Art:\t\t{str(self.user_type)}"
+            ]
+        )
+
 
 class UserSettingsManager:
     DB_PATH = "settings.db"
 
-    def __init__(self, user_id: int = 0):
-        self._user_id = user_id
+    def __init__(self, user: User | None):
+        self._user_id = user.id if user else 0
         self._conn = sqlite3.connect(UserSettingsManager.DB_PATH)
         self._cursor = self._conn.cursor()
         self._conn.execute(
@@ -99,6 +108,9 @@ class UserSettingsManager:
 
     @settings.setter
     def settings(self, settings: UserSettings):
+        if self._user_id == 0:
+            return
+
         self._cursor.execute(
             """
             INSERT OR REPLACE INTO settings
@@ -120,6 +132,9 @@ class UserSettingsManager:
 
     @settings.deleter
     def settings(self):
+        if self._user_id == 0:
+            return
+
         self._cursor.execute(
             """
             DELETE FROM settings WHERE user_id = ?

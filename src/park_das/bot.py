@@ -25,6 +25,10 @@ class ParkBot:
                     "Listet verfügbare Kommandos auf."
                 ),
                 types.BotCommand(
+                    "settings",
+                    "Listet die aktuellen Einstellungen."
+                ),
+                types.BotCommand(
                     "navigation",
                     "Listet alle verfügbaren Parkplätze als navigierbare Buttons auf."
                 )
@@ -56,7 +60,7 @@ class ParkBot:
             user (User) : User the inline buttons are sent to
             message (Message) : New message containing inline buttons
         """
-        with UserSettingsManager(user.id) as mgr:
+        with UserSettingsManager(user) as mgr:
             if mgr.settings.inline_button is not None:
                 self._bot.delete_message(mgr.settings.inline_button.chat_id,
                                          mgr.settings.inline_button.message_id)

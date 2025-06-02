@@ -1,6 +1,6 @@
 from math import sqrt, floor
 
-from telebot import types, util
+from telebot import types, util, formatting
 
 from .navigation_builders import build_googlemaps_url
 from .scrapper import fetch_data
@@ -15,7 +15,7 @@ from .bot import bot
 def start_handler(message: types.Message):
     with bot as api:
         # Create default settings if new user
-        with UserSettingsManager(message.from_user.id) as mgr:
+        with UserSettingsManager(message.from_user) as mgr:
             if mgr.settings.user_type == UserType.UNDEFINED:
                 mgr.settings = UserSettings(UserLanguage.DE, MapProvider.GOOGLE, UserType.STUDENT)
         api.send_message(message.chat.id, "Willkommen bei ParkBot!")
@@ -29,10 +29,21 @@ def help_handler(message: types.Message):
 
 
 def help_message() -> str:
-    help_txt = "Folgende Befehle sind verfügbar:\n"
-    return help_txt + "".join(
-        [f"/{cmd.command} : {cmd.description}\n" for cmd in bot.api.get_my_commands()]
+    help_msg = "Folgende Befehle sind verfügbar:"
+    commands = "\n".join(
+        [f"/{cmd.command} : {cmd.description}" for cmd in bot.api.get_my_commands()]
     )
+    return formatting.format_text(help_msg, commands)
+
+
+@bot.api.message_handler(commands=["settings"])
+def settings_handler(message: types.Message):
+    with bot as api:
+        with UserSettingsManager(message.from_user) as mgr:
+            api.reply_to(
+                message,
+                str(mgr.settings)
+            )
 
 
 @bot.api.message_handler(commands=["live"])
@@ -100,7 +111,7 @@ def location_handler(message: types.Message):
 
 @bot.api.message_handler(commands=["navigation"])
 def nav_helper(message: types.Message):
-    with UserSettingsManager(message.from_user.id) as mgr:
+    with UserSettingsManager(message.from_user) as mgr:
         parking_spots = fetch_data(mgr.settings.user_type == UserType.VISITOR)
         parking_spots.sort(key=lambda val : val.free_spaces, reverse=True)
 

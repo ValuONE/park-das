@@ -61,14 +61,41 @@ class MapProvider(Enum):
     GOOGLE = auto()
     UNDEFINED = auto()
 
+    def __str__(self) -> str:
+        match(self):
+            case MapProvider.APPLE:
+                return "Apple Maps"
+            case MapProvider.GOOGLE:
+                return "Google Maps"
+            case MapProvider.UNDEFINED:
+                return "Nicht gesetzt"
+
 
 class UserLanguage(Enum):
     EN = auto()
     DE = auto()
     UNDEFINED = auto()
 
+    def __str__(self) -> str:
+        match(self):
+            case UserLanguage.DE:
+                return "Deutsch"
+            case UserLanguage.EN:
+                return "English"
+            case UserLanguage.UNDEFINED:
+                return "Nicht gesetzt"
+
 
 class UserType(Enum):
     VISITOR = auto()
     STUDENT = auto()
     UNDEFINED = auto()
+
+    def __str__(self) -> str:
+        match(self):
+            case UserType.VISITOR:
+                return "Besucher"
+            case UserType.STUDENT:
+                return "Student / Mitarbeiter"
+            case UserType.UNDEFINED:
+                return "Nicht gesetzt"
