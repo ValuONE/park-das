@@ -80,18 +80,14 @@ def settings_handler(message: types.Message):
                     )
                 case _:
                     update = loads(cb.data if cb.data else "")
-                    match(update["k"]):
-                        case "UserLanguage":
-                            with UserSettingsManager(cb.from_user) as settings:
-                                settings.language = UserLanguage(update["v"])
-                        case "MapProvider":
-                            with UserSettingsManager(cb.from_user) as settings:
-                                settings.map_provider = MapProvider(update["v"])
-                        case "UserType":
-                            with UserSettingsManager(cb.from_user) as settings:
-                                settings.user_type = UserType(update["v"])
-
                     with UserSettingsManager(cb.from_user) as settings:
+                        settings.language = UserLanguage(update[UserLanguage.__name__]) if \
+                            UserLanguage.__name__ in update else settings.language
+                        settings.map_provider = MapProvider(update[MapProvider.__name__]) if \
+                            MapProvider.__name__ in update else settings.map_provider
+                        settings.user_type = UserType(update[UserType.__name__]) if \
+                            UserType.__name__ in update else settings.user_type
+
                         api.edit_message_text(
                             str(settings),
                             sent.chat.id,

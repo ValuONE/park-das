@@ -63,8 +63,7 @@ class SettingsEnum(Enum):
     def markup_buttons(cls) -> InlineKeyboardMarkup:
         options = {str(opt) : {"callback_data" : dumps(
             {
-                "k": cls.__name__,
-                "v": opt.value
+                cls.__name__ : opt.value
             }
         )} for opt in cls}
         options.pop("None")
