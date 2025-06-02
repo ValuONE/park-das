@@ -55,13 +55,29 @@ def settings_handler(message: types.Message):
         def handle_settings_callback(cb : types.CallbackQuery):
             match(cb.data):
                 case "user_language":
-                    api.edit_message_reply_markup(sent.chat.id, sent.message_id, reply_markup=UserLanguage.markup_buttons())
+                    api.edit_message_reply_markup(
+                        sent.chat.id,
+                        sent.message_id,
+                        reply_markup=UserLanguage.markup_buttons()
+                    )
                 case "map_provider":
-                    api.edit_message_reply_markup(sent.chat.id, sent.message_id, reply_markup=MapProvider.markup_buttons())
+                    api.edit_message_reply_markup(
+                        sent.chat.id,
+                        sent.message_id,
+                        reply_markup=MapProvider.markup_buttons()
+                    )
                 case "user_type":
-                    api.edit_message_reply_markup(sent.chat.id, sent.message_id, reply_markup=UserType.markup_buttons())
+                    api.edit_message_reply_markup(
+                        sent.chat.id,
+                        sent.message_id,
+                        reply_markup=UserType.markup_buttons()
+                    )
                 case "back":
-                    api.edit_message_reply_markup(sent.chat.id, sent.message_id, reply_markup=UserSettings.markup_buttons())
+                    api.edit_message_reply_markup(
+                        sent.chat.id,
+                        sent.message_id,
+                        reply_markup=UserSettings.markup_buttons()
+                    )
                 case _:
                     update = loads(cb.data if cb.data else "")
                     match(update["k"]):
@@ -74,9 +90,19 @@ def settings_handler(message: types.Message):
                         case "UserType":
                             with UserSettingsManager(cb.from_user) as settings:
                                 settings.user_type = UserType(update["v"])
+
                     with UserSettingsManager(cb.from_user) as settings:
-                        api.edit_message_text(str(settings), sent.chat.id, sent.message_id)
-                    api.edit_message_reply_markup(sent.chat.id, sent.message_id, reply_markup=UserSettings.markup_buttons())
+                        api.edit_message_text(
+                            str(settings),
+                            sent.chat.id,
+                            sent.message_id
+                        )
+
+                    api.edit_message_reply_markup(
+                        sent.chat.id,
+                        sent.message_id,
+                        reply_markup=UserSettings.markup_buttons()
+                    )
 
             api.answer_callback_query(cb.id)
 
