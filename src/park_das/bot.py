@@ -3,6 +3,8 @@
 import telebot
 from telebot import types
 
+from .models import UserSettingsManager, InlineButtons
+
 class ParkBot:
     def __init__(self) -> None:
         try:
@@ -29,8 +31,6 @@ class ParkBot:
             ]
         )
 
-        self._buttons_msgs = {}
-
     def __del__(self):
         self._bot.stop_polling()
         del self._bot
@@ -56,11 +56,11 @@ class ParkBot:
             user (User) : User the inline buttons are sent to
             message (Message) : New message containing inline buttons
         """
-        if user.id in self._buttons_msgs:
-            self._bot.delete_message(self._buttons_msgs[user.id].chat.id,
-                                     self._buttons_msgs[user.id].message_id)
-            del self._buttons_msgs[user.id]
-        self._buttons_msgs[user.id] = message
+        with UserSettingsManager(user.id) as mgr:
+            if mgr.settings.inline_button is not None:
+                self._bot.delete_message(mgr.settings.inline_button.chat_id,
+                                         mgr.settings.inline_button.message_id)
+                mgr.settings.inline_button = InlineButtons(message.chat.id, message.message_id)
 
 
 # Global instance to be used when doing anything with the API
