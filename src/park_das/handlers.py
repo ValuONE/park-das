@@ -1,4 +1,5 @@
 from math import sqrt, floor
+from json import loads
 
 from telebot import types, util, formatting
 
@@ -15,9 +16,11 @@ from .bot import bot
 def start_handler(message: types.Message):
     with bot as api:
         # Create default settings if new user
-        with UserSettingsManager(message.from_user) as mgr:
-            if mgr.settings.user_type == UserType.UNDEFINED:
-                mgr.settings = UserSettings(UserLanguage.DE, MapProvider.GOOGLE, UserType.STUDENT)
+        with UserSettingsManager(message.from_user) as settings:
+            if settings.user_type == UserType.UNDEFINED:
+                settings.language = UserLanguage.DE
+                settings.map_provider = MapProvider.GOOGLE
+                settings.user_type = UserType.STUDENT
         api.send_message(message.chat.id, "Willkommen bei ParkBot!")
         api.send_message(message.chat.id, help_message())
 
@@ -39,11 +42,43 @@ def help_message() -> str:
 @bot.api.message_handler(commands=["settings"])
 def settings_handler(message: types.Message):
     with bot as api:
-        with UserSettingsManager(message.from_user) as mgr:
-            api.reply_to(
-                message,
-                str(mgr.settings)
+        with UserSettingsManager(message.from_user) as settings:
+            sent = api.send_message(
+                message.chat.id,
+                str(settings),
+                reply_markup=UserSettings.markup_buttons()
             )
+
+        bot.update_inline_buttons(message.from_user, sent)
+
+        @bot.api.callback_query_handler(lambda cb : cb.message.message_id == sent.message_id)
+        def handle_settings_callback(cb : types.CallbackQuery):
+            match(cb.data):
+                case "user_language":
+                    api.edit_message_reply_markup(sent.chat.id, sent.message_id, reply_markup=UserLanguage.markup_buttons())
+                case "map_provider":
+                    api.edit_message_reply_markup(sent.chat.id, sent.message_id, reply_markup=MapProvider.markup_buttons())
+                case "user_type":
+                    api.edit_message_reply_markup(sent.chat.id, sent.message_id, reply_markup=UserType.markup_buttons())
+                case "back":
+                    api.edit_message_reply_markup(sent.chat.id, sent.message_id, reply_markup=UserSettings.markup_buttons())
+                case _:
+                    update = loads(cb.data if cb.data else "")
+                    match(update["k"]):
+                        case "UserLanguage":
+                            with UserSettingsManager(cb.from_user) as settings:
+                                settings.language = UserLanguage(update["v"])
+                        case "MapProvider":
+                            with UserSettingsManager(cb.from_user) as settings:
+                                settings.map_provider = MapProvider(update["v"])
+                        case "UserType":
+                            with UserSettingsManager(cb.from_user) as settings:
+                                settings.user_type = UserType(update["v"])
+                    with UserSettingsManager(cb.from_user) as settings:
+                        api.edit_message_text(str(settings), sent.chat.id, sent.message_id)
+                    api.edit_message_reply_markup(sent.chat.id, sent.message_id, reply_markup=UserSettings.markup_buttons())
+
+            api.answer_callback_query(cb.id)
 
 
 @bot.api.message_handler(commands=["live"])
@@ -111,47 +146,49 @@ def location_handler(message: types.Message):
 
 @bot.api.message_handler(commands=["navigation"])
 def nav_helper(message: types.Message):
-    with UserSettingsManager(message.from_user) as mgr:
-        parking_spots = fetch_data(mgr.settings.user_type == UserType.VISITOR)
-        parking_spots.sort(key=lambda val : val.free_spaces, reverse=True)
+    with UserSettingsManager(message.from_user) as settings:
+        cached = settings
 
-        with bot as api:
+    parking_spots = fetch_data(cached.user_type == UserType.VISITOR)
+    parking_spots.sort(key=lambda val : val.free_spaces, reverse=True)
 
-            def emojify(free, total):
-                ratio = free / total
-                if ratio > 0.25:
-                    return "✅"
-                if 0.05 < ratio < 0.25:
-                    return "⚠️"
-                return "❌"
+    with bot as api:
 
-            match(MapProvider.GOOGLE):
-                case MapProvider.GOOGLE:
-                    spots = {
-                        (
-                            f"{emojify(spot.free_spaces, spot.total_spaces)} "
-                            f"{spot.name.name}: {spot.free_spaces}"
-                        ): {
-                            "url" : build_googlemaps_url(spot.get_pos())
-                        } for spot in parking_spots}
+        def emojify(free, total):
+            ratio = free / total
+            if ratio > 0.25:
+                return "✅"
+            if 0.05 < ratio < 0.25:
+                return "⚠️"
+            return "❌"
 
-                    spots_buttons = util.quick_markup(
-                        spots,
-                        row_width=floor(sqrt(len(parking_spots)))
-                    )
+        match(cached.map_provider):
+            case MapProvider.GOOGLE:
+                spots = {
+                    (
+                        f"{emojify(spot.free_spaces, spot.total_spaces)} "
+                        f"{spot.name.name}: {spot.free_spaces}"
+                    ): {
+                        "url" : build_googlemaps_url(spot.get_pos())
+                    } for spot in parking_spots}
 
-                    buttons_msg = api.send_message(
-                        message.chat.id,
-                        "Verfügbare Parkplätze:",
-                        reply_markup=spots_buttons
-                    )
+                spots_buttons = util.quick_markup(
+                    spots,
+                    row_width=floor(sqrt(len(parking_spots)))
+                )
 
-                    bot.update_inline_buttons(
-                        message.from_user,
-                        buttons_msg
-                    )
-                case MapProvider.APPLE:
-                    api.send_message(
-                        message.chat.id,
-                        "Noch nicht implementiert!"
-                    )
+                buttons_msg = api.send_message(
+                    message.chat.id,
+                    "Verfügbare Parkplätze:",
+                    reply_markup=spots_buttons
+                )
+
+                bot.update_inline_buttons(
+                    message.from_user,
+                    buttons_msg
+                )
+            case MapProvider.APPLE:
+                api.send_message(
+                    message.chat.id,
+                    "Noch nicht implementiert!"
+            )

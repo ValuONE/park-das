@@ -52,7 +52,7 @@ class ParkBot:
         """
         return self._bot
 
-    def update_inline_buttons(self, user : types.User, message : types.Message):
+    def update_inline_buttons(self, user : types.User | None, message : types.Message):
         """
         Ensures only one set of inline buttons is present.
         
@@ -60,11 +60,11 @@ class ParkBot:
             user (User) : User the inline buttons are sent to
             message (Message) : New message containing inline buttons
         """
-        with UserSettingsManager(user) as mgr:
-            if mgr.settings.inline_button is not None:
-                self._bot.delete_message(mgr.settings.inline_button.chat_id,
-                                         mgr.settings.inline_button.message_id)
-                mgr.settings.inline_button = InlineButtons(message.chat.id, message.message_id)
+        with UserSettingsManager(user) as settings:
+            if settings.inline_buttons is not None:
+                self._bot.delete_message(settings.inline_buttons.chat_id,
+                                         settings.inline_buttons.message_id)
+            settings.inline_buttons = InlineButtons(message.chat.id, message.message_id)
 
 
 # Global instance to be used when doing anything with the API

@@ -1,5 +1,8 @@
 ﻿from enum import Enum, auto
-from telebot.types import Location
+from json import dumps
+
+from telebot.util import quick_markup
+from telebot.types import Location, InlineKeyboardMarkup
 
 class CarParkNames(Enum):
     P09 = "Parkplatz P09"
@@ -55,8 +58,23 @@ CAR_PARK_LOCATIONS = {
         CarParkNames.M4: Location(9.994923, 48.40974)
 }
 
+class SettingsEnum(Enum):
+    @classmethod
+    def markup_buttons(cls) -> InlineKeyboardMarkup:
+        options = {str(opt) : {"callback_data" : dumps(
+            {
+                "k": cls.__name__,
+                "v": opt.value
+            }
+        )} for opt in cls}
+        options.pop("None")
+        options["<< Zurück"] ={"callback_data" : "back"}
+        return quick_markup(
+            options,
+            row_width=len(cls._member_names_) - 1
+        )
 
-class MapProvider(Enum):
+class MapProvider(SettingsEnum):
     APPLE = auto()
     GOOGLE = auto()
     UNDEFINED = auto()
@@ -64,14 +82,14 @@ class MapProvider(Enum):
     def __str__(self) -> str:
         match(self):
             case MapProvider.APPLE:
-                return "Apple Maps"
+                return "Apple 🍎"
             case MapProvider.GOOGLE:
-                return "Google Maps"
+                return "Google 🤖"
             case MapProvider.UNDEFINED:
-                return "Nicht gesetzt"
+                return "None"
 
 
-class UserLanguage(Enum):
+class UserLanguage(SettingsEnum):
     EN = auto()
     DE = auto()
     UNDEFINED = auto()
@@ -79,14 +97,14 @@ class UserLanguage(Enum):
     def __str__(self) -> str:
         match(self):
             case UserLanguage.DE:
-                return "Deutsch"
+                return "Deutsch 🇩🇪"
             case UserLanguage.EN:
-                return "English"
+                return "English 🇺🇸"
             case UserLanguage.UNDEFINED:
-                return "Nicht gesetzt"
+                return "None"
 
 
-class UserType(Enum):
+class UserType(SettingsEnum):
     VISITOR = auto()
     STUDENT = auto()
     UNDEFINED = auto()
@@ -94,8 +112,8 @@ class UserType(Enum):
     def __str__(self) -> str:
         match(self):
             case UserType.VISITOR:
-                return "Besucher"
+                return "Besucher 🙋"
             case UserType.STUDENT:
-                return "Student / Mitarbeiter"
+                return "Mitarbeiter 🧑‍🔬"
             case UserType.UNDEFINED:
-                return "Nicht gesetzt"
+                return "None"
