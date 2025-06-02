@@ -71,7 +71,7 @@ class SettingsEnum(Enum):
         options["<< Zurück"] ={"callback_data" : "back"}
         return quick_markup(
             options,
-            row_width=len(cls._member_names_) - 1
+            row_width=len(cls) - 1
         )
 
 class MapProvider(SettingsEnum):
