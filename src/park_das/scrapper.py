@@ -113,10 +113,14 @@ async def fetch_data_async(is_visitor: bool) -> List[CarPark]:
             if name == "" or numbers == "" or free_spaces == "":
                 continue
 
-            parking_data.append(
-                CarPark(CarParkNames.parse(f"{name} {numbers}"),
-                        int(free_spaces), int(total_spaces))
-            )
+            try:
+                parking_data.append(
+                    CarPark(CarParkNames.parse(f"{name} {numbers}"),
+                            int(free_spaces), int(total_spaces))
+                )
+            except KeyError:
+                print(f"Unknown car park name: {name} {numbers}")
+                continue
 
         result = await crawler.arun(
             url=PBW_URL,
