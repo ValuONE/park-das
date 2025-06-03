@@ -81,14 +81,13 @@ class MapProvider(SettingsEnum):
     UNDEFINED = auto()
 
     def __str__(self) -> str:
-        match(self):
+        match self:
             case MapProvider.APPLE:
                 return "Apple 🍎"
             case MapProvider.GOOGLE:
                 return "Google 🤖"
-            case MapProvider.UNDEFINED:
-                return "None"
 
+        return "None"
 
 class UserLanguage(SettingsEnum):
     EN = auto()
@@ -96,13 +95,13 @@ class UserLanguage(SettingsEnum):
     UNDEFINED = auto()
 
     def __str__(self) -> str:
-        match(self):
+        match self:
             case UserLanguage.DE:
                 return "Deutsch 🇩🇪"
             case UserLanguage.EN:
                 return "English 🇺🇸"
-            case UserLanguage.UNDEFINED:
-                return "None"
+
+        return "None"
 
 
 class UserType(SettingsEnum):
@@ -111,10 +110,10 @@ class UserType(SettingsEnum):
     UNDEFINED = auto()
 
     def __str__(self) -> str:
-        match(self):
+        match self:
             case UserType.VISITOR:
                 return "Besucher 🙋"
             case UserType.STUDENT:
                 return "Mitarbeiter 🧑‍🔬"
-            case UserType.UNDEFINED:
-                return "None"
+
+        return "None"
