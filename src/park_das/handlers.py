@@ -10,7 +10,6 @@ from .constants import MapProvider, UserType, UserLanguage
 from .distance import simple_distance
 
 from .bot import bot
-from .util import emojify, format_car_park
 
 
 @bot.api.message_handler(commands=["start"])
@@ -180,7 +179,7 @@ def nav_helper(message: types.Message):
             case MapProvider.GOOGLE:
                 spots = {
                     (
-                        f"{emojify(spot.free_spaces, spot.total_spaces)} "
+                        f"{spot.emojify_status()} "
                         f"{spot.name.name}: {spot.free_spaces}"
                     ): {
                         "url" : build_googlemaps_url(spot.get_pos())
@@ -224,12 +223,12 @@ def overview_handler(message: types.Message):
                 city_car_parks.append(car_park)
                 continue
 
-            response += format_car_park(car_park)
+            response += car_park.to_pretty()
 
         if len(city_car_parks) > 0:
             response += "\n🏙️ Stadtparkplätze:\n\n"
             for car_park in city_car_parks:
-                response += format_car_park(car_park)
+                response += car_park.to_pretty()
 
         with bot as api:
             api.send_message(message.chat.id, response)
