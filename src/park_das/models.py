@@ -88,9 +88,16 @@ class UserSettings:
 class UserSettingsManager:
     DB_PATH = "settings.db"
 
+    _instance = None
+    _refs = {}
+
+    def __new__(cls, user: User | None = None):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
     def __init__(self, user : User | None):
         self._user = user
-        self._settings = UserSettings()
         self._connection = sqlite3.connect(UserSettingsManager.DB_PATH)
         with self._connection:
             self._connection.execute(
@@ -108,7 +115,7 @@ class UserSettingsManager:
                 """
             )
 
-    def __enter__(self):
+    def _load_settings(self):
         if self._user is None:
             return UserSettings()
 
@@ -125,7 +132,7 @@ class UserSettingsManager:
             )
 
             result = cursor.fetchone()
-            self._settings = UserSettings(
+            return UserSettings(
                 language=UserLanguage(result[0]),
                 map_provider=MapProvider(result[1]),
                 user_type=UserType(result[2]),
@@ -135,7 +142,14 @@ class UserSettingsManager:
                     if result[5] is not None else None
             ) if result is not None else UserSettings()
 
-        return self._settings
+    def __enter__(self):
+        if self._user is None:
+            return UserSettings()
+
+        if self._user.id not in self._refs:
+            self._refs[self._user.id] = self._load_settings()
+
+        return self._refs[self._user.id]
 
     def __exit__(self, exc_type, exc_value, traceback):
         if self._user is None:
@@ -146,6 +160,7 @@ class UserSettingsManager:
             return
 
         with self._connection:
+            settings = self._refs[self._user.id]
             self._connection.execute(
                 """
                 INSERT OR REPLACE INTO settings
@@ -155,18 +170,12 @@ class UserSettingsManager:
                 """,
                 (
                     self._user.id,
-                    self._settings.language.value,
-                    self._settings.map_provider.value,
-                    self._settings.user_type.value,
-                    self._settings.last_location.longitude if
-                        self._settings.last_location else None,
-                    self._settings.last_location.latitude if
-                        self._settings.last_location else None,
-                    self._settings.inline_buttons.chat_id if
-                        self._settings.inline_buttons else None,
-                    self._settings.inline_buttons.message_id if
-                        self._settings.inline_buttons else None
+                    settings.language.value,
+                    settings.map_provider.value,
+                    settings.user_type.value,
+                    settings.last_location.longitude if settings.last_location else None,
+                    settings.last_location.latitude if settings.last_location else None,
+                    settings.inline_buttons.chat_id if settings.inline_buttons else None,
+                    settings.inline_buttons.message_id if settings.inline_buttons else None
                 )
             )
-
-        self._connection.close()
