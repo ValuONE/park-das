@@ -20,6 +20,7 @@ class CarParkNames(Enum):
     P32 = "Parkplatz P32"
     P41 = "Parkplatz P41"
     P44 = "Parkplatz P44"
+    HE = "Parkhaus Helmholtzstraße"
     M1 = "HNO Klinik M1"
     M2 = "Kliniken Michelsberg M2"
     M3 = "Frauenklinik M3"
@@ -52,6 +53,7 @@ CAR_PARK_LOCATIONS = {
         CarParkNames.P32: Location(9.957266, 48.42410),
         CarParkNames.P41: Location(9.958382, 48.42599),
         CarParkNames.P44: Location(9.962580, 48.42602),
+        CarParkNames.HE: Location(9.958027, 48.42585),
         CarParkNames.M1: Location(9.991174, 48.40938),
         CarParkNames.M2: Location(9.992269, 48.40819),
         CarParkNames.M3: Location(9.99374, 48.41076),
