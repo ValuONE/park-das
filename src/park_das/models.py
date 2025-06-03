@@ -35,6 +35,26 @@ class CarPark:
         """
         return self.name.get_pos()
 
+    def emojify_status(self) -> str:
+        ratio = self.free_spaces / self.total_spaces
+        if ratio > 0.25:
+            return "✅"
+        if 0.05 < ratio < 0.25:
+            return "⚠️"
+        return "❌"
+
+    def to_pretty(self):
+        """
+        Formats a car park's information into a string.
+    
+        Args:
+            park (CarPark): The car park to format.
+    
+        Returns:
+            str: A formatted string containing the car park's name, free spaces and a status icon.
+        """
+        return (f"{self.name.value}: {self.free_spaces} frei | "
+                f"{self.emojify_status()}\n")
 
 @dataclass
 class UserSettings:

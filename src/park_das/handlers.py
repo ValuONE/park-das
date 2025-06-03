@@ -175,20 +175,11 @@ def nav_helper(message: types.Message):
     parking_spots.sort(key=lambda val : val.free_spaces, reverse=True)
 
     with bot as api:
-
-        def emojify(free, total):
-            ratio = free / total
-            if ratio > 0.25:
-                return "✅"
-            if 0.05 < ratio < 0.25:
-                return "⚠️"
-            return "❌"
-
         match(cached.map_provider):
             case MapProvider.GOOGLE:
                 spots = {
                     (
-                        f"{emojify(spot.free_spaces, spot.total_spaces)} "
+                        f"{spot.emojify_status()} "
                         f"{spot.name.name}: {spot.free_spaces}"
                     ): {
                         "url" : build_googlemaps_url(spot.get_pos())
@@ -214,3 +205,30 @@ def nav_helper(message: types.Message):
                     message.chat.id,
                     "Noch nicht implementiert!"
             )
+
+@bot.api.message_handler(commands=["overview"])
+def overview_handler(message: types.Message):
+    """
+    Handler for the /overview command.
+    Displays an overview of all car parks with their free spaces.
+    """
+    with UserSettingsManager(message.from_user) as settings:
+        is_visitor = settings.user_type is UserType.VISITOR
+        car_parks = fetch_data(is_visitor)
+        response = "🎓 Universitätsparkplätze:\n\n"
+
+        city_car_parks = []
+        for car_park in car_parks:
+            if car_park.name.name.startswith("M"):
+                city_car_parks.append(car_park)
+                continue
+
+            response += car_park.to_pretty()
+
+        if len(city_car_parks) > 0:
+            response += "\n🏙️ Stadtparkplätze:\n\n"
+            for car_park in city_car_parks:
+                response += car_park.to_pretty()
+
+        with bot as api:
+            api.send_message(message.chat.id, response)
