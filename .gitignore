@@ -279,3 +279,4 @@ pyrightconfig.json
 
 ### Custom ###
 .DS_Store
+settings.db
