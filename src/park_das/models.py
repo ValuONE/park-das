@@ -21,6 +21,7 @@ class CarPark:
     Attributes:
         name (CarParkNames): The name of the car park, based on the CarParkNames enum.
         free_spaces (int): The current number of available parking spaces.
+        total_spaces (int): The total number of available parking spaces.
     """
     name: CarParkNames
     free_spaces: int
