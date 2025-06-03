@@ -29,6 +29,10 @@ class ParkBot:
                     "Listet die aktuellen Einstellungen."
                 ),
                 types.BotCommand(
+                    "overview",
+                    "Listet alle verfügbaren Parkplätze auf."
+                ),
+                types.BotCommand(
                     "navigation",
                     "Listet alle verfügbaren Parkplätze als navigierbare Buttons auf."
                 )
