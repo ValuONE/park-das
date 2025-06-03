@@ -1,6 +1,6 @@
-from typing import Tuple
+from telebot.types import Location
 
-def build_googlemaps_url(location : Tuple[float, float]) -> str:
+def build_googlemaps_url(location : Location) -> str:
     """
     Creates a routable link to the provided location on google maps
 
@@ -11,4 +11,4 @@ def build_googlemaps_url(location : Tuple[float, float]) -> str:
     """
     # https://developers.google.com/maps/documentation/urls/get-started?hl=de#directions-action
     return "https://www.google.com/maps/dir/?api=1" +\
-            f"&destination={location[0]},{location[1]}&travelmode=driving"
+            f"&destination={location.latitude},{location.longitude}&travelmode=driving"

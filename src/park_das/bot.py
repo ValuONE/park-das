@@ -3,6 +3,8 @@
 import telebot
 from telebot import types
 
+from .models import UserSettingsManager, InlineButtons
+
 class ParkBot:
     def __init__(self) -> None:
         try:
@@ -23,13 +25,15 @@ class ParkBot:
                     "Listet verfügbare Kommandos auf."
                 ),
                 types.BotCommand(
+                    "settings",
+                    "Listet die aktuellen Einstellungen."
+                ),
+                types.BotCommand(
                     "navigation",
                     "Listet alle verfügbaren Parkplätze als navigierbare Buttons auf."
                 )
             ]
         )
-
-        self._buttons_msgs = {}
 
     def __del__(self):
         self._bot.stop_polling()
@@ -48,7 +52,7 @@ class ParkBot:
         """
         return self._bot
 
-    def update_inline_buttons(self, user : types.User, message : types.Message):
+    def update_inline_buttons(self, user : types.User | None, message : types.Message):
         """
         Ensures only one set of inline buttons is present.
         
@@ -56,11 +60,11 @@ class ParkBot:
             user (User) : User the inline buttons are sent to
             message (Message) : New message containing inline buttons
         """
-        if user.id in self._buttons_msgs:
-            self._bot.delete_message(self._buttons_msgs[user.id].chat.id,
-                                     self._buttons_msgs[user.id].message_id)
-            del self._buttons_msgs[user.id]
-        self._buttons_msgs[user.id] = message
+        with UserSettingsManager(user) as settings:
+            if settings.inline_buttons is not None:
+                self._bot.delete_message(settings.inline_buttons.chat_id,
+                                         settings.inline_buttons.message_id)
+            settings.inline_buttons = InlineButtons(message.chat.id, message.message_id)
 
 
 # Global instance to be used when doing anything with the API

@@ -1,10 +1,19 @@
-﻿import dataclasses
-from typing import Tuple
+﻿import sqlite3
+from dataclasses import dataclass
+from typing import Optional
 
-from .constants import CarParkNames
+from telebot.util import quick_markup
+from telebot.types import Location, User
+from .constants import CarParkNames, UserLanguage, UserType, MapProvider
 
 
-@dataclasses.dataclass
+@dataclass
+class InlineButtons:
+    chat_id: int
+    message_id: int
+
+
+@dataclass
 class CarPark:
     """
     Represents a car park with a name and the number of available spaces.
@@ -17,12 +26,127 @@ class CarPark:
     free_spaces: int
     total_spaces: int
 
-    def get_pos(self) -> Tuple[float, float]:
+    def get_pos(self) -> Location:
         """
-       Returns the geographic position (latitude, longitude) of the car park.
+        Returns the geographic position (latitude, longitude) of the car park.
     
-       Returns:
-           tuple[float, float]: A tuple containing the latitude and longitude of the car park.
-       """
-        (lat, lon) = self.name.get_pos()
-        return lat, lon
+        Returns:
+            tuple[float, float]: A tuple containing the latitude and longitude of the car park.
+        """
+        return self.name.get_pos()
+
+
+@dataclass
+class UserSettings:
+    language: UserLanguage = UserLanguage.UNDEFINED
+    map_provider: MapProvider = MapProvider.UNDEFINED
+    user_type: UserType = UserType.UNDEFINED
+    last_location: Optional[Location] = None
+    inline_buttons: Optional[InlineButtons] = None
+
+    def __str__(self) -> str:
+        return "\n".join(
+            [
+                f"Gewählte Sprache:\t\t{str(self.language)}",
+                f"Karten Präferenz:\t\t{str(self.map_provider)}",
+                f"Nutzer Art:\t\t{str(self.user_type)}"
+            ]
+        )
+
+    @classmethod
+    def markup_buttons(cls):
+        return quick_markup(
+            {
+                "Sprache": {"callback_data" : "user_language"},
+                "Kartenanbieter": {"callback_data" : "map_provider"},
+                "Nutzertyp": {"callback_data" : "user_type"}
+            },
+            row_width=1
+        )
+
+
+class UserSettingsManager:
+    DB_PATH = "settings.db"
+
+    def __init__(self, user : User | None):
+        self._user = user
+        self._settings = UserSettings()
+        self._connection = sqlite3.connect(UserSettingsManager.DB_PATH)
+        with self._connection:
+            self._connection.execute(
+                """
+                CREATE TABLE IF NOT EXISTS settings (
+                    user_id INTEGER PRIMARY KEY,
+                    language INTEGER NOT NULL,
+                    map_provider INTEGER NOT NULL,
+                    user_type INTEGER NOT NULL,
+                    longitude REAL,
+                    latitude REAL,
+                    chat_id INTEGER,
+                    message_id INTEGER
+                )
+                """
+            )
+
+    def __enter__(self):
+        if self._user is None:
+            return UserSettings()
+
+        with self._connection:
+            cursor = self._connection.execute(
+                """
+                SELECT language, map_provider, user_type, longitude, latitude, chat_id, message_id
+                FROM settings
+                WHERE user_id = ?
+                """,
+                (
+                    self._user.id,
+                )
+            )
+
+            result = cursor.fetchone()
+            self._settings = UserSettings(
+                language=UserLanguage(result[0]),
+                map_provider=MapProvider(result[1]),
+                user_type=UserType(result[2]),
+                last_location=Location(result[3], result[4])
+                    if result[3] is not None else None,
+                inline_buttons=InlineButtons(result[5], result[6])
+                    if result[5] is not None else None
+            ) if result is not None else UserSettings()
+
+        return self._settings
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self._user is None:
+            return
+
+        if isinstance(exc_value, Exception):
+            self._connection.rollback()
+            return
+
+        with self._connection:
+            self._connection.execute(
+                """
+                INSERT OR REPLACE INTO settings
+                (user_id, language, map_provider, user_type,
+                longitude, latitude, chat_id, message_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    self._user.id,
+                    self._settings.language.value,
+                    self._settings.map_provider.value,
+                    self._settings.user_type.value,
+                    self._settings.last_location.longitude if
+                        self._settings.last_location else None,
+                    self._settings.last_location.latitude if
+                        self._settings.last_location else None,
+                    self._settings.inline_buttons.chat_id if
+                        self._settings.inline_buttons else None,
+                    self._settings.inline_buttons.message_id if
+                        self._settings.inline_buttons else None
+                )
+            )
+
+        self._connection.close()
