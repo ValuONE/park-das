@@ -93,7 +93,7 @@ def location_handler(message: types.Message):
 
         spots_buttons = util.quick_markup(
             spots,
-            row_width=floor(sqrt(len(spots))) if spots else 1
+            row_width=1
         )
 
         match(MapProviders.GOOGLE):
