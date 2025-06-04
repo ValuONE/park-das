@@ -5,8 +5,9 @@ from re import search
 
 from crawl4ai import AsyncWebCrawler, JsonCssExtractionStrategy, CrawlerRunConfig, CacheMode
 
-from .constants import CarParkNames
+from .constants import CarParkNames, VISITOR_PARK_LOCATIONS, WORKER_PARK_LOCATIONS
 from .models import CarPark
+
 
 VISITOR_URL = "http://tsu-app.rrooaarr.biz/front/index.html"
 WORKER_URL = "http://tsu-app.rrooaarr.biz/front/mitarbeiter.html"
@@ -79,13 +80,18 @@ config_helmholtz = config.clone(
     extraction_strategy=JsonCssExtractionStrategy(helmholtz_schema)
 )
 
-async def fetch_data(is_visitor: bool) -> List[CarPark]:
+parking_data: List[CarPark] = []
+
+
+async def scrape_data(is_visitor: bool = False, scrape_all: bool = False) -> List[CarPark]:
     """
-    Asynchronously fetches parking space data.
+    Asynchronously fetches parking space data. This is only used for the interval
+    updates of the parking spaces. Use `get_data` to retrieve the data.
 
     Args:
         is_visitor (bool): If True, fetch data for visitor parking spaces.
                            If False, fetch data for worker parking spaces.
+        scrape_all (bool): If True, also fetch data for the Helmholtz parking space.
 
     Returns:
         List[CarPark]: A list of CarPark objects containing the fetched data.
@@ -96,10 +102,10 @@ async def fetch_data(is_visitor: bool) -> List[CarPark]:
             config=config
         )
 
-        parking_data = []
+        data = []
         if not result.success:
             print("Default-Crawl failed:", result.error_message)
-            return parking_data
+            return data
 
         for item in json.loads(result.extracted_content):
             name: str = item["name"]
@@ -114,13 +120,16 @@ async def fetch_data(is_visitor: bool) -> List[CarPark]:
                 continue
 
             try:
-                parking_data.append(
+                data.append(
                     CarPark(CarParkNames.parse(f"{name} {numbers}"),
                             int(free_spaces), int(total_spaces))
                 )
             except KeyError:
                 print(f"Unknown car park name: {name} {numbers}")
                 continue
+
+        if not scrape_all:
+            return data
 
         result = await crawler.arun(
             url=PBW_URL,
@@ -129,15 +138,48 @@ async def fetch_data(is_visitor: bool) -> List[CarPark]:
 
         if not result.success:
             print("PBW-Crawl failed:", result.error_message)
-            return parking_data
+            return data
 
         item = json.loads(result.extracted_content)[0]
         if not item["total_spaces"] or not item["free_spaces"]:
-            return parking_data
+            return data
 
-        parking_data.append(
+        data.append(
             CarPark(CarParkNames.HE,
                     int(item["free_spaces"]), int(item["total_spaces"]))
         )
 
-        return parking_data
+        return data
+
+
+async def fetch_data():
+    """
+    Updates the global parking_data list with the latest parking space data.
+
+    Returns:
+        List[CarPark]: A list of CarPark objects containing the fetched data.
+    """
+    visitor_data = await scrape_data(is_visitor=True, scrape_all=True)
+    worker_data = await scrape_data()
+
+    global parking_data
+    parking_data = list({p.name: p for p in (visitor_data + worker_data)}.values())
+
+
+async def get_data(is_visitor: bool) -> List[CarPark]:
+    """
+    Filters and retrieves parking data based on the type of user.
+
+    Args:
+        is_visitor (bool): If True, retrieves data for visitor parking spaces.
+                           If False, retrieves data for worker parking spaces.
+
+    Returns:
+        List[CarPark]: A list of CarPark objects filtered by the specified user type.
+                       Visitor parking spaces are filtered using `VISITOR_PARK_LOCATIONS`,
+                       while worker parking spaces are filtered using `WORKER_PARK_LOCATIONS`.
+    """
+    if is_visitor:
+        return [p for p in parking_data if p.name in VISITOR_PARK_LOCATIONS]
+
+    return [p for p in parking_data if p.name in WORKER_PARK_LOCATIONS]

@@ -4,7 +4,7 @@ from json import loads
 from telebot import types, util, formatting
 
 from .navigation_builders import build_routing_data
-from .scrapper import fetch_data
+from .scrapper import get_data
 from .models import UserSettingsManager, UserSettings
 from .constants import MapProvider, UserType, UserLanguage
 from .distance import simple_distance
@@ -142,7 +142,7 @@ async def location_handler(message: types.Message):
         s.last_location = message.location
         is_visitor = s.user_type == UserType.VISITOR
 
-        carparks = await fetch_data(is_visitor)
+        carparks = await get_data(is_visitor)
 
         carparks_with_distance = [
             (
@@ -186,7 +186,7 @@ async def navigation_handler(message: types.Message):
     Displays inline buttons that can navigate to corresponding parking lots.
     """
     async with UserSettingsManager(message.from_user) as s:
-        parking_spots = await fetch_data(s.user_type == UserType.VISITOR)
+        parking_spots = await get_data(s.user_type == UserType.VISITOR)
         parking_spots.sort(key=lambda p: p.free_spaces, reverse=True)
 
         spots = {
@@ -223,7 +223,7 @@ async def overview_handler(message: types.Message):
     """
     async with UserSettingsManager(message.from_user) as s:
         is_visitor = s.user_type is UserType.VISITOR
-        car_parks = await fetch_data(is_visitor)
+        car_parks = await get_data(is_visitor)
         response = "🎓 Universitätsparkplätze:\n\n"
 
         city_car_parks = []
