@@ -1,20 +1,28 @@
 ﻿import os
 
-import telebot
+from telebot.async_telebot import AsyncTeleBot
+from telebot.asyncio_storage import StateMemoryStorage
 from telebot import types
 
 from .models import UserSettingsManager, InlineButtons
 
 class ParkBot:
+
     def __init__(self) -> None:
         try:
             token = os.environ["TOKEN"]
         except KeyError as e:
             raise ValueError("TOKEN environment variable is not set or is empty.") from e
 
-        self._bot = telebot.TeleBot(token)
+        data = StateMemoryStorage()
+        self._bot = AsyncTeleBot(token, state_storage=data)
 
-        self._bot.set_my_commands(
+    async def setup_bot(self):
+        """
+        Creates bot commands, does all initialization
+        """
+        await self.api.delete_my_commands()
+        await self.api.set_my_commands(
             [
                 types.BotCommand(
                     "start",
@@ -33,30 +41,30 @@ class ParkBot:
                     "Listet alle verfügbaren Parkplätze auf."
                 ),
                 types.BotCommand(
+                    "live",
+                    "Ermöglicht senden des aktuellen Standorts."
+                ),
+                types.BotCommand(
                     "navigation",
                     "Listet alle verfügbaren Parkplätze als navigierbare Buttons auf."
                 )
             ]
         )
 
-    def __del__(self):
-        self._bot.stop_polling()
-        del self._bot
-
-    def __enter__(self) -> telebot.TeleBot:
+    async def __aenter__(self) -> AsyncTeleBot:
         return self._bot
 
-    def __exit__(self, exception_type, exception_val, trace):
+    async def __aexit__(self, exception_type, exception_val, trace):
         return True
 
     @property
-    def api(self) -> telebot.TeleBot:
+    def api(self) -> AsyncTeleBot:
         """
         Access to the bot API
         """
         return self._bot
 
-    def update_inline_buttons(self, user : types.User | None, message : types.Message):
+    async def update_inline_buttons(self, user : types.User | None, message : types.Message):
         """
         Ensures only one set of inline buttons is present.
         
@@ -64,11 +72,11 @@ class ParkBot:
             user (User) : User the inline buttons are sent to
             message (Message) : New message containing inline buttons
         """
-        with UserSettingsManager(user) as settings:
-            if settings.inline_buttons is not None:
-                self._bot.delete_message(settings.inline_buttons.chat_id,
-                                         settings.inline_buttons.message_id)
-            settings.inline_buttons = InlineButtons(message.chat.id, message.message_id)
+        async with UserSettingsManager(user) as s:
+            if s.inline_buttons is not None:
+                await self.api.delete_message(s.inline_buttons.chat_id,
+                                              s.inline_buttons.message_id)
+            s.inline_buttons = InlineButtons(message.chat.id, message.message_id)
 
 
 # Global instance to be used when doing anything with the API
