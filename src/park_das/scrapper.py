@@ -49,6 +49,7 @@ schema = {
 extraction_strategy = JsonCssExtractionStrategy(schema)
 
 config = CrawlerRunConfig(
+    wait_until="networkidle",
     cache_mode=CacheMode.BYPASS,
     extraction_strategy=extraction_strategy,
 )

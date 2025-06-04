@@ -41,66 +41,70 @@ def help_message() -> str:
 
 @bot.api.message_handler(commands=["settings"])
 def settings_handler(message: types.Message):
-    with bot as api:
-        with UserSettingsManager(message.from_user) as settings:
+    """
+    Handler for the /settings command
+    Displays current settings in text message and inline buttons to adjust settings.
+    """
+    with UserSettingsManager(message.from_user) as settings:
+        with bot as api:
             sent = api.send_message(
                 message.chat.id,
                 str(settings),
                 reply_markup=UserSettings.markup_buttons()
             )
 
-        bot.update_inline_buttons(message.from_user, sent)
+            bot.update_inline_buttons(message.from_user, sent)
 
-        @bot.api.callback_query_handler(lambda cb : cb.message.message_id == sent.message_id)
-        def handle_settings_callback(cb : types.CallbackQuery):
-            match(cb.data):
-                case "user_language":
-                    api.edit_message_reply_markup(
-                        sent.chat.id,
-                        sent.message_id,
-                        reply_markup=UserLanguage.markup_buttons()
-                    )
-                case "map_provider":
-                    api.edit_message_reply_markup(
-                        sent.chat.id,
-                        sent.message_id,
-                        reply_markup=MapProvider.markup_buttons()
-                    )
-                case "user_type":
-                    api.edit_message_reply_markup(
-                        sent.chat.id,
-                        sent.message_id,
-                        reply_markup=UserType.markup_buttons()
-                    )
-                case "back":
-                    api.edit_message_reply_markup(
-                        sent.chat.id,
-                        sent.message_id,
-                        reply_markup=UserSettings.markup_buttons()
-                    )
-                case _:
-                    update = loads(cb.data if cb.data else "")
-                    with UserSettingsManager(cb.from_user) as settings:
-                        settings.language = UserLanguage(update[UserLanguage.__name__]) if \
-                            UserLanguage.__name__ in update else settings.language
-                        settings.map_provider = MapProvider(update[MapProvider.__name__]) if \
-                            MapProvider.__name__ in update else settings.map_provider
-                        settings.user_type = UserType(update[UserType.__name__]) if \
-                            UserType.__name__ in update else settings.user_type
-
-                        api.edit_message_text(
-                            str(settings),
+            @bot.api.callback_query_handler(lambda cb : cb.message.message_id == sent.message_id)
+            def handle_settings_callback(cb : types.CallbackQuery):
+                match(cb.data):
+                    case "user_language":
+                        api.edit_message_reply_markup(
                             sent.chat.id,
-                            sent.message_id
+                            sent.message_id,
+                            reply_markup=UserLanguage.markup_buttons()
+                        )
+                    case "map_provider":
+                        api.edit_message_reply_markup(
+                            sent.chat.id,
+                            sent.message_id,
+                            reply_markup=MapProvider.markup_buttons()
+                        )
+                    case "user_type":
+                        api.edit_message_reply_markup(
+                            sent.chat.id,
+                            sent.message_id,
+                            reply_markup=UserType.markup_buttons()
+                        )
+                    case "back":
+                        api.edit_message_reply_markup(
+                            sent.chat.id,
+                            sent.message_id,
+                            reply_markup=UserSettings.markup_buttons()
+                        )
+                    case _:
+                        update = loads(cb.data if cb.data else "")
+                        with UserSettingsManager(cb.from_user) as settings:
+                            settings.language = UserLanguage(update[UserLanguage.__name__]) if \
+                                UserLanguage.__name__ in update else settings.language
+                            settings.map_provider = MapProvider(update[MapProvider.__name__]) if \
+                                MapProvider.__name__ in update else settings.map_provider
+                            settings.user_type = UserType(update[UserType.__name__]) if \
+                                UserType.__name__ in update else settings.user_type
+
+                            api.edit_message_text(
+                                str(settings),
+                                sent.chat.id,
+                                sent.message_id
+                            )
+
+                        api.edit_message_reply_markup(
+                            sent.chat.id,
+                            sent.message_id,
+                            reply_markup=UserSettings.markup_buttons()
                         )
 
-                    api.edit_message_reply_markup(
-                        sent.chat.id,
-                        sent.message_id,
-                        reply_markup=UserSettings.markup_buttons()
-                    )
-
-            api.answer_callback_query(cb.id)
+                api.answer_callback_query(cb.id)
 
 
 @bot.api.message_handler(commands=["live"])
