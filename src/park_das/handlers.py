@@ -190,7 +190,7 @@ def nav_helper(message: types.Message):
 
         build_url = (
             build_googlemaps_url
-            if user_settings.map_provider == MapProvider.GOOGLE
+            if settings.map_provider == MapProvider.GOOGLE
             else build_applemaps_url
         )
         spots = {
