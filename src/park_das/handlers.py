@@ -124,8 +124,12 @@ def live_handler(message: types.Message):
             reply_markup=markup,
         )
 
+
 @bot.api.message_handler(content_types=["location"])
 def location_handler(message: types.Message):
+    """
+    Receives user's location and returns sorted car parks.
+    """
     if not message.location:
         return
 
@@ -158,12 +162,8 @@ def location_handler(message: types.Message):
             else build_applemaps_url
         )
 
-    def emojify(free, total):
-        ratio = free / total
-        return "✅" if ratio > .25 else "⚠️" if ratio > .05 else "❌"
-
     buttons = {
-        f"{emojify(p.free_spaces, p.total_spaces)} "
+        f"{p.emojify_status()} "
         f"{p.name.value}: {p.free_spaces} | {dist:.1f} km":
             {"url": build_url(p.get_pos())}
         for p, dist in carparks_with_distance
@@ -180,33 +180,58 @@ def location_handler(message: types.Message):
 
 @bot.api.message_handler(commands=["navigation"])
 def nav_helper(message: types.Message):
-    with UserSettingsManager(message.from_user) as s:
-        user_settings = s
+    """
+    Handler for the /navigation command.
+    Displays inline buttons that can navigate to corresponding parking lots.
+    """
+    with UserSettingsManager(message.from_user) as settings:
+        parking_spots = fetch_data(settings.user_type == UserType.VISITOR)
+        parking_spots.sort(key=lambda p: p.free_spaces, reverse=True)
 
-    parking_spots = fetch_data(user_settings.user_type == UserType.VISITOR)
-    parking_spots.sort(key=lambda p: p.free_spaces, reverse=True)
-
-    build_url = (
-        build_googlemaps_url
-        if user_settings.map_provider == MapProvider.GOOGLE
-        else build_applemaps_url
-    )
-
-    def emojify(free, total):
-        ratio = free / total
-        return "✅" if ratio > .25 else "⚠️" if ratio > .05 else "❌"
-
-    spots = {
-        f"{emojify(p.free_spaces, p.total_spaces)} {p.name.name}: {p.free_spaces}": {
-            "url": build_url(p.get_pos())
-        }
-        for p in parking_spots
-    }
-
-    markup = util.quick_markup(spots, row_width=floor(sqrt(len(parking_spots))))
-
-    with bot as api:
-        bot.update_inline_buttons(
-            message.from_user,
-            api.send_message(message.chat.id, "Verfügbare Parkplätze:", reply_markup=markup)
+        build_url = (
+            build_googlemaps_url
+            if user_settings.map_provider == MapProvider.GOOGLE
+            else build_applemaps_url
         )
+        spots = {
+            f"{p.emojify_status()} {p.name.name}: {p.free_spaces}": {
+                "url": build_url(p.get_pos())
+            }
+            for p in parking_spots
+        }
+
+        buttons = util.quick_markup(spots, row_width=floor(sqrt(len(parking_spots))))
+
+        with bot as api:
+            bot.update_inline_buttons(
+                message.from_user,
+                api.send_message(message.chat.id, "Verfügbare Parkplätze:", reply_markup=buttons)
+            )
+
+
+@bot.api.message_handler(commands=["overview"])
+def overview_handler(message: types.Message):
+    """
+    Handler for the /overview command.
+    Displays an overview of all car parks with their free spaces.
+    """
+    with UserSettingsManager(message.from_user) as settings:
+        is_visitor = settings.user_type is UserType.VISITOR
+        car_parks = fetch_data(is_visitor)
+        response = "🎓 Universitätsparkplätze:\n\n"
+
+        city_car_parks = []
+        for car_park in car_parks:
+            if car_park.name.name.startswith("M"):
+                city_car_parks.append(car_park)
+                continue
+
+            response += car_park.to_pretty()
+
+        if len(city_car_parks) > 0:
+            response += "\n🏙️ Stadtparkplätze:\n\n"
+            for car_park in city_car_parks:
+                response += car_park.to_pretty()
+
+        with bot as api:
+            api.send_message(message.chat.id, response)
