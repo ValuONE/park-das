@@ -1,5 +1,5 @@
 ﻿import json
-import asyncio
+
 from typing import List
 from re import search
 
@@ -79,7 +79,7 @@ config_helmholtz = config.clone(
     extraction_strategy=JsonCssExtractionStrategy(helmholtz_schema)
 )
 
-async def fetch_data_async(is_visitor: bool) -> List[CarPark]:
+async def fetch_data(is_visitor: bool) -> List[CarPark]:
     """
     Asynchronously fetches parking space data.
 
@@ -141,18 +141,3 @@ async def fetch_data_async(is_visitor: bool) -> List[CarPark]:
         )
 
         return parking_data
-
-
-def fetch_data(is_visitor: bool) -> List[CarPark]:
-    """
-        Synchronously fetches parking space data by 
-        wrapping the asynchronous function using asyncio. 
-    
-        Args:
-            is_visitor (bool): If True, fetch data for visitor parking spaces. 
-                               If False, fetch data for worker parking spaces.
-    
-        Returns:
-            List[CarPark]: A list of CarPark objects containing the fetched data.
-    """
-    return asyncio.run(fetch_data_async(is_visitor))
