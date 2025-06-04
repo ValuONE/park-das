@@ -4,6 +4,7 @@ from json import dumps
 from telebot.util import quick_markup
 from telebot.types import Location, InlineKeyboardMarkup
 
+
 class CarParkNames(Enum):
     P09 = "Parkplatz P09"
     P10 = "Parkplatz P10"
@@ -20,6 +21,7 @@ class CarParkNames(Enum):
     P32 = "Parkplatz P32"
     P41 = "Parkplatz P41"
     P44 = "Parkplatz P44"
+    HE = "Parkhaus Helmholtzstraße"
     M1 = "HNO Klinik M1"
     M2 = "Kliniken Michelsberg M2"
     M3 = "Frauenklinik M3"
@@ -37,41 +39,77 @@ class CarParkNames(Enum):
 
 
 CAR_PARK_LOCATIONS = {
-        CarParkNames.P09: Location(9.942359, 48.41912),
-        CarParkNames.P10: Location(9.943917, 48.42005),
-        CarParkNames.P11: Location(9.944910, 48.42046),
-        CarParkNames.P12: Location(9.945848, 48.42076),
-        CarParkNames.P13: Location(9.945848, 48.42076),
-        CarParkNames.P16: Location(9.947908, 48.42263),
-        CarParkNames.P18: Location(9.949502, 48.42304),
-        CarParkNames.P20: Location(9.951033, 48.42396),
-        CarParkNames.P22: Location(9.954085, 48.42506),
-        CarParkNames.P26: Location(9.951642, 48.42389),
-        CarParkNames.P23: Location(9.954960, 48.42543),
-        CarParkNames.P24: Location(9.953938, 48.42481),
-        CarParkNames.P32: Location(9.957266, 48.42410),
-        CarParkNames.P41: Location(9.958382, 48.42599),
-        CarParkNames.P44: Location(9.962580, 48.42602),
-        CarParkNames.M1: Location(9.991174, 48.40938),
-        CarParkNames.M2: Location(9.992269, 48.40819),
-        CarParkNames.M3: Location(9.99374, 48.41076),
-        CarParkNames.M4: Location(9.994923, 48.40974)
+    CarParkNames.P09: Location(9.942359, 48.41912),
+    CarParkNames.P10: Location(9.943917, 48.42005),
+    CarParkNames.P11: Location(9.944910, 48.42046),
+    CarParkNames.P12: Location(9.945848, 48.42076),
+    CarParkNames.P13: Location(9.945848, 48.42076),
+    CarParkNames.P16: Location(9.947908, 48.42263),
+    CarParkNames.P18: Location(9.949502, 48.42304),
+    CarParkNames.P20: Location(9.951033, 48.42396),
+    CarParkNames.P22: Location(9.954085, 48.42506),
+    CarParkNames.P26: Location(9.951642, 48.42389),
+    CarParkNames.P23: Location(9.954960, 48.42543),
+    CarParkNames.P24: Location(9.953938, 48.42481),
+    CarParkNames.P32: Location(9.957266, 48.42410),
+    CarParkNames.P41: Location(9.958382, 48.42599),
+    CarParkNames.P44: Location(9.962580, 48.42602),
+    CarParkNames.HE: Location(9.958027, 48.42585),
+    CarParkNames.M1: Location(9.991174, 48.40938),
+    CarParkNames.M2: Location(9.992269, 48.40819),
+    CarParkNames.M3: Location(9.99374, 48.41076),
+    CarParkNames.M4: Location(9.994923, 48.40974)
 }
+
+VISITOR_PARK_LOCATIONS: list[CarParkNames] = [
+    CarParkNames.P10,
+    CarParkNames.P18,
+    CarParkNames.P20,
+    CarParkNames.P22,
+    CarParkNames.P26,
+    CarParkNames.P32,
+    CarParkNames.P44,
+    CarParkNames.M1,
+    CarParkNames.M2,
+    CarParkNames.M3,
+    CarParkNames.M4,
+    CarParkNames.HE
+]
+
+WORKER_PARK_LOCATIONS: list[CarParkNames] = [
+    CarParkNames.P09,
+    CarParkNames.P10,
+    CarParkNames.P11,
+    CarParkNames.P12,
+    CarParkNames.P13,
+    CarParkNames.P16,
+    CarParkNames.P20,
+    CarParkNames.P26,
+    CarParkNames.P23,
+    CarParkNames.P24,
+    CarParkNames.P41,
+    CarParkNames.P44,
+    CarParkNames.M1,
+    CarParkNames.M2,
+    CarParkNames.HE
+]
+
 
 class SettingsEnum(Enum):
     @classmethod
     def markup_buttons(cls) -> InlineKeyboardMarkup:
-        options = {str(opt) : {"callback_data" : dumps(
+        options = {str(opt): {"callback_data": dumps(
             {
-                cls.__name__ : opt.value
+                cls.__name__: opt.value
             }
         )} for opt in cls}
         options.pop("None")
-        options["<< Zurück"] ={"callback_data" : "back"}
+        options["<< Zurück"] = {"callback_data": "back"}
         return quick_markup(
             options,
             row_width=len(cls) - 1
         )
+
 
 class MapProvider(SettingsEnum):
     APPLE = auto()
@@ -79,13 +117,13 @@ class MapProvider(SettingsEnum):
     UNDEFINED = auto()
 
     def __str__(self) -> str:
-        match(self):
+        match self:
             case MapProvider.APPLE:
                 return "Apple 🍎"
             case MapProvider.GOOGLE:
                 return "Google 🤖"
-            case MapProvider.UNDEFINED:
-                return "None"
+
+        return "None"
 
 
 class UserLanguage(SettingsEnum):
@@ -94,13 +132,13 @@ class UserLanguage(SettingsEnum):
     UNDEFINED = auto()
 
     def __str__(self) -> str:
-        match(self):
+        match self:
             case UserLanguage.DE:
                 return "Deutsch 🇩🇪"
             case UserLanguage.EN:
                 return "English 🇺🇸"
-            case UserLanguage.UNDEFINED:
-                return "None"
+
+        return "None"
 
 
 class UserType(SettingsEnum):
@@ -109,10 +147,10 @@ class UserType(SettingsEnum):
     UNDEFINED = auto()
 
     def __str__(self) -> str:
-        match(self):
+        match self:
             case UserType.VISITOR:
                 return "Besucher 🙋"
             case UserType.STUDENT:
                 return "Mitarbeiter 🧑‍🔬"
-            case UserType.UNDEFINED:
-                return "None"
+
+        return "None"

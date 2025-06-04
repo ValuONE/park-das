@@ -3,112 +3,117 @@ from json import loads
 
 from telebot import types, util, formatting
 
-from .navigation_builders import build_googlemaps_url, build_applemaps_url
-from .scrapper import fetch_data
+from .navigation_builders import build_routing_data
+from .scrapper import get_data
 from .models import UserSettingsManager, UserSettings
 from .constants import MapProvider, UserType, UserLanguage
 from .distance import simple_distance
 
 from .bot import bot
 
-
 @bot.api.message_handler(commands=["start"])
-def start_handler(message: types.Message):
-    with bot as api:
+async def start_handler(message: types.Message):
+    async with bot as api:
         # Create default settings if new user
-        with UserSettingsManager(message.from_user) as settings:
-            if settings.user_type == UserType.UNDEFINED:
-                settings.language = UserLanguage.DE
-                settings.map_provider = MapProvider.GOOGLE
-                settings.user_type = UserType.STUDENT
-        api.send_message(message.chat.id, "Willkommen bei ParkBot!")
-        api.send_message(message.chat.id, help_message())
+        async with UserSettingsManager(message.from_user) as s:
+            if s.user_type == UserType.UNDEFINED:
+                s.language = UserLanguage.DE
+                s.map_provider = MapProvider.GOOGLE
+                s.user_type = UserType.STUDENT
+        await api.send_message(
+            message.chat.id,
+            formatting.format_text(
+                formatting.mitalic("🤖 Willkommen bei ParkBot 🚘"),
+                "",
+                await help_message()
+            ),
+            parse_mode="Markdown"
+        )
 
 
 @bot.api.message_handler(commands=["help"])
-def help_handler(message: types.Message):
-    with bot as api:
-        api.send_message(message.chat.id, help_message())
+async def help_handler(message: types.Message):
+    async with bot as api:
+        await api.send_message(
+            message.chat.id,
+            await help_message(),
+            parse_mode="Markdown"
+        )
 
 
-def help_message() -> str:
-    help_msg = "Folgende Befehle sind verfügbar:"
-    commands = "\n".join(
-        [f"/{cmd.command} : {cmd.description}" for cmd in bot.api.get_my_commands()]
+async def help_message() -> str:
+    cmds = await bot.api.get_my_commands(scope=None, language_code=None)
+    cmds_str = "\n".join([f"/{cmd.command} : {cmd.description}" for cmd in cmds])
+    return formatting.format_text(
+        formatting.mbold("Folgende Befehle sind verfügbar:"),
+        cmds_str
     )
-    return formatting.format_text(help_msg, commands)
 
 
 @bot.api.message_handler(commands=["settings"])
-def settings_handler(message: types.Message):
+async def settings_handler(message: types.Message):
     """
     Handler for the /settings command
     Displays current settings in text message and inline buttons to adjust settings.
     """
-    with UserSettingsManager(message.from_user) as settings:
-        with bot as api:
-            sent = api.send_message(
+    async with UserSettingsManager(message.from_user) as s:
+        async with bot as api:
+            sent = await api.send_message(
                 message.chat.id,
-                str(settings),
+                str(s),
                 reply_markup=UserSettings.markup_buttons()
             )
 
-            bot.update_inline_buttons(message.from_user, sent)
+            await bot.update_inline_buttons(message.from_user, sent)
 
             @bot.api.callback_query_handler(lambda cb : cb.message.message_id == sent.message_id)
-            def handle_settings_callback(cb : types.CallbackQuery):
+            async def handle_settings_callback(cb : types.CallbackQuery):
                 match(cb.data):
                     case "user_language":
-                        api.edit_message_reply_markup(
+                        await api.edit_message_reply_markup(
                             sent.chat.id,
                             sent.message_id,
                             reply_markup=UserLanguage.markup_buttons()
                         )
                     case "map_provider":
-                        api.edit_message_reply_markup(
+                        await api.edit_message_reply_markup(
                             sent.chat.id,
                             sent.message_id,
                             reply_markup=MapProvider.markup_buttons()
                         )
                     case "user_type":
-                        api.edit_message_reply_markup(
+                        await api.edit_message_reply_markup(
                             sent.chat.id,
                             sent.message_id,
                             reply_markup=UserType.markup_buttons()
                         )
                     case "back":
-                        api.edit_message_reply_markup(
+                        await api.edit_message_reply_markup(
                             sent.chat.id,
                             sent.message_id,
                             reply_markup=UserSettings.markup_buttons()
                         )
                     case _:
                         update = loads(cb.data if cb.data else "")
-                        with UserSettingsManager(cb.from_user) as settings:
-                            settings.language = UserLanguage(update[UserLanguage.__name__]) if \
-                                UserLanguage.__name__ in update else settings.language
-                            settings.map_provider = MapProvider(update[MapProvider.__name__]) if \
-                                MapProvider.__name__ in update else settings.map_provider
-                            settings.user_type = UserType(update[UserType.__name__]) if \
-                                UserType.__name__ in update else settings.user_type
+                        s.language = UserLanguage(update[UserLanguage.__name__]) if \
+                            UserLanguage.__name__ in update else s.language
+                        s.map_provider = MapProvider(update[MapProvider.__name__]) if \
+                            MapProvider.__name__ in update else s.map_provider
+                        s.user_type = UserType(update[UserType.__name__]) if \
+                            UserType.__name__ in update else s.user_type
 
-                            api.edit_message_text(
-                                str(settings),
-                                sent.chat.id,
-                                sent.message_id
-                            )
-
-                        api.edit_message_reply_markup(
+                        await api.edit_message_text(
+                            str(s),
                             sent.chat.id,
                             sent.message_id,
                             reply_markup=UserSettings.markup_buttons()
                         )
 
-                api.answer_callback_query(cb.id)
+                await api.answer_callback_query(cb.id)
 
 
 @bot.api.message_handler(commands=["live"])
-def live_handler(message: types.Message):
+async def live_handler(message: types.Message):
     markup = types.ReplyKeyboardMarkup(
         row_width=1, resize_keyboard=True, one_time_keyboard=True
     )
@@ -117,8 +122,8 @@ def live_handler(message: types.Message):
     )
     markup.add(button_geo)
 
-    with bot as api:
-        api.send_message(
+    async with bot as api:
+        await api.send_message(
             message.chat.id,
             "Tippe auf „📍 Standort senden“, um mir deine aktuelle Position zu schicken.",
             reply_markup=markup,
@@ -126,98 +131,99 @@ def live_handler(message: types.Message):
 
 
 @bot.api.message_handler(content_types=["location"])
-def location_handler(message: types.Message):
+async def location_handler(message: types.Message):
     """
     Receives user's location and returns sorted car parks.
     """
     if not message.location:
         return
 
-    lat, lon = message.location.latitude, message.location.longitude
+    async with UserSettingsManager(message.from_user) as s:
+        s.last_location = message.location
+        is_visitor = s.user_type == UserType.VISITOR
 
-    with UserSettingsManager(message.from_user) as settings:
-        is_visitor = settings.user_type == UserType.VISITOR
+        carparks = await get_data(is_visitor)
 
-    carparks = fetch_data(is_visitor=is_visitor)
-
-    carparks_with_distance = [
-        (
-            p,
-            simple_distance(
-                lat,
-                lon,
-                p.get_pos().latitude,
-                p.get_pos().longitude
+        carparks_with_distance = [
+            (
+                p,
+                simple_distance(
+                    s.last_location.latitude,
+                    s.last_location.longitude,
+                    p.get_pos().latitude,
+                    p.get_pos().longitude
+                )
             )
-        )
-        for p in carparks
-    ]
-    carparks_with_distance.sort(key=lambda t: t[1])
+            for p in carparks
+        ]
+        carparks_with_distance.sort(key=lambda t: t[1])
 
-    # Determine the map provider to use for building URLs
-    with UserSettingsManager(message.from_user) as s:
-        build_url = (
-            build_googlemaps_url
-            if s.map_provider == MapProvider.GOOGLE
-            else build_applemaps_url
-        )
+        # Determine the map provider to use for building URLs
+        buttons = {
+            f"{p.emojify_status()} "
+            f"{p.name.value}: {p.free_spaces} | {dist:.1f} km":
+                build_routing_data(p.get_pos(), s.map_provider)
+            for p, dist in carparks_with_distance
+        }
 
-    buttons = {
-        f"{p.emojify_status()} "
-        f"{p.name.value}: {p.free_spaces} | {dist:.1f} km":
-            {"url": build_url(p.get_pos())}
-        for p, dist in carparks_with_distance
-    }
+        markup = util.quick_markup(buttons, row_width=1)
 
-    markup = util.quick_markup(buttons, row_width=1)
-
-    with bot as api:
-        bot.update_inline_buttons(
-            message.from_user,
-            api.send_message(message.chat.id, "Nächste Parkplätze:", reply_markup=markup)
-        )
+        async with bot as api:
+            await bot.update_inline_buttons(
+                message.from_user,
+                await api.send_message(
+                    message.chat.id,
+                    "Nächste Parkplätze:",
+                    reply_markup=markup
+                )
+            )
 
 
 @bot.api.message_handler(commands=["navigation"])
-def nav_helper(message: types.Message):
+async def navigation_handler(message: types.Message):
     """
     Handler for the /navigation command.
     Displays inline buttons that can navigate to corresponding parking lots.
     """
-    with UserSettingsManager(message.from_user) as settings:
-        parking_spots = fetch_data(settings.user_type == UserType.VISITOR)
+    async with UserSettingsManager(message.from_user) as s:
+        parking_spots = await get_data(s.user_type == UserType.VISITOR)
         parking_spots.sort(key=lambda p: p.free_spaces, reverse=True)
 
-        build_url = (
-            build_googlemaps_url
-            if settings.map_provider == MapProvider.GOOGLE
-            else build_applemaps_url
-        )
         spots = {
-            f"{p.emojify_status()} {p.name.name}: {p.free_spaces}": {
-                "url": build_url(p.get_pos())
-            }
+            f"{p.emojify_status()} {p.name.name}: {p.free_spaces}":
+                build_routing_data(p.get_pos(), s.map_provider)
             for p in parking_spots
         }
 
         buttons = util.quick_markup(spots, row_width=floor(sqrt(len(parking_spots))))
 
-        with bot as api:
-            bot.update_inline_buttons(
-                message.from_user,
-                api.send_message(message.chat.id, "Verfügbare Parkplätze:", reply_markup=buttons)
+        async with bot as api:
+            sent = await api.send_message(
+                message.chat.id,
+                "Verfügbare Parkplätze:",
+                reply_markup=buttons
             )
+
+            await bot.update_inline_buttons(message.from_user, sent)
+
+            @bot.api.callback_query_handler(lambda cb : cb.message.message_id == sent.message_id)
+            async def handle_navigation_callback(cb : types.CallbackQuery):
+                await api.answer_callback_query(
+                    cb.id,
+                    "⚠️ Es ist kein Kartenanbieter gesetzt ⚠️",
+                    True
+                )
 
 
 @bot.api.message_handler(commands=["overview"])
-def overview_handler(message: types.Message):
+async def overview_handler(message: types.Message):
     """
     Handler for the /overview command.
     Displays an overview of all car parks with their free spaces.
     """
-    with UserSettingsManager(message.from_user) as settings:
-        is_visitor = settings.user_type is UserType.VISITOR
-        car_parks = fetch_data(is_visitor)
+    async with UserSettingsManager(message.from_user) as s:
+        is_visitor = s.user_type is UserType.VISITOR
+        car_parks = await get_data(is_visitor)
         response = "🎓 Universitätsparkplätze:\n\n"
 
         city_car_parks = []
@@ -233,5 +239,5 @@ def overview_handler(message: types.Message):
             for car_park in city_car_parks:
                 response += car_park.to_pretty()
 
-        with bot as api:
-            api.send_message(message.chat.id, response)
+        async with bot as api:
+            await api.send_message(message.chat.id, response)

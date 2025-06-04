@@ -1,9 +1,11 @@
-﻿import sqlite3
-from dataclasses import dataclass
+﻿from dataclasses import dataclass
 from typing import Optional
+
+import aiosqlite
 
 from telebot.util import quick_markup
 from telebot.types import Location, User
+
 from .constants import CarParkNames, UserLanguage, UserType, MapProvider
 
 
@@ -21,6 +23,7 @@ class CarPark:
     Attributes:
         name (CarParkNames): The name of the car park, based on the CarParkNames enum.
         free_spaces (int): The current number of available parking spaces.
+        total_spaces (int): The total number of available parking spaces.
     """
     name: CarParkNames
     free_spaces: int
@@ -98,9 +101,13 @@ class UserSettingsManager:
 
     def __init__(self, user : User | None):
         self._user = user
-        self._connection = sqlite3.connect(UserSettingsManager.DB_PATH)
-        with self._connection:
-            self._connection.execute(
+
+    async def _load_settings(self) -> UserSettings:
+        if self._user is None:
+            return UserSettings()
+
+        async with aiosqlite.connect(UserSettingsManager.DB_PATH) as con:
+            await con.execute(
                 """
                 CREATE TABLE IF NOT EXISTS settings (
                     user_id INTEGER PRIMARY KEY,
@@ -115,12 +122,7 @@ class UserSettingsManager:
                 """
             )
 
-    def _load_settings(self):
-        if self._user is None:
-            return UserSettings()
-
-        with self._connection:
-            cursor = self._connection.execute(
+            async with con.execute(
                 """
                 SELECT language, map_provider, user_type, longitude, latitude, chat_id, message_id
                 FROM settings
@@ -129,39 +131,35 @@ class UserSettingsManager:
                 (
                     self._user.id,
                 )
-            )
+            ) as cursor:
+                result = await cursor.fetchone()
+                return UserSettings(
+                    language=UserLanguage(result[0]),
+                    map_provider=MapProvider(result[1]),
+                    user_type=UserType(result[2]),
+                    last_location=Location(result[3], result[4])
+                        if result[3] is not None else None,
+                    inline_buttons=InlineButtons(result[5], result[6])
+                        if result[5] is not None else None
+                ) if result is not None else UserSettings()
 
-            result = cursor.fetchone()
-            return UserSettings(
-                language=UserLanguage(result[0]),
-                map_provider=MapProvider(result[1]),
-                user_type=UserType(result[2]),
-                last_location=Location(result[3], result[4])
-                    if result[3] is not None else None,
-                inline_buttons=InlineButtons(result[5], result[6])
-                    if result[5] is not None else None
-            ) if result is not None else UserSettings()
-
-    def __enter__(self):
+    async def __aenter__(self) -> UserSettings:
         if self._user is None:
             return UserSettings()
 
+
         if self._user.id not in self._refs:
-            self._refs[self._user.id] = self._load_settings()
+            self._refs[self._user.id] = await self._load_settings()
 
         return self._refs[self._user.id]
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    async def __aexit__(self, exc_type, exc_value, traceback) -> bool:
         if self._user is None:
-            return
+            return False
 
-        if isinstance(exc_value, Exception):
-            self._connection.rollback()
-            return
-
-        with self._connection:
+        async with aiosqlite.connect(UserSettingsManager.DB_PATH) as con:
             settings = self._refs[self._user.id]
-            self._connection.execute(
+            await con.execute(
                 """
                 INSERT OR REPLACE INTO settings
                 (user_id, language, map_provider, user_type,
@@ -179,3 +177,6 @@ class UserSettingsManager:
                     settings.inline_buttons.message_id if settings.inline_buttons else None
                 )
             )
+            await con.commit()
+
+        return True
