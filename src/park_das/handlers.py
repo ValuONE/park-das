@@ -3,7 +3,7 @@ from json import loads
 
 from telebot import types, util, formatting
 
-from .navigation_builders import build_googlemaps_url
+from .navigation_builders import build_googlemaps_url, build_applemaps_url
 from .scrapper import fetch_data
 from .models import UserSettingsManager, UserSettings
 from .constants import MapProvider, UserType, UserLanguage
@@ -133,40 +133,48 @@ def location_handler(message: types.Message):
     if not message.location:
         return
 
-    lat = message.location.latitude
-    lon = message.location.longitude
+    lat, lon = message.location.latitude, message.location.longitude
 
-    # Gets the parking data
-    carparks = fetch_data(is_visitor=True)
+    with UserSettingsManager(message.from_user) as settings:
+        is_visitor = settings.user_type == UserType.VISITOR
 
-    # Calculates distances to each parking slot
-    carparks_with_distance = []
-    for carpark in carparks:
-        park = carpark.get_pos()
-        distance = simple_distance(lat, lon, park.latitude, park.longitude)
-        carparks_with_distance.append((carpark, distance))
+    carparks = fetch_data(is_visitor=is_visitor)
 
-    # Sorts the car slots by distance
-    carparks_with_distance.sort(key=lambda x: x[1])
-
-    # creates the response message
-    response = "🚗 Nächste Parkplätze:\n\n"
-    for carpark, distance in carparks_with_distance:
-        response += \
-            (
-                f"{carpark.name.value}: "
-                f"{carpark.free_spaces} frei — "
-                f"{distance:.1f} km entfernt\n"
+    carparks_with_distance = [
+        (
+            p,
+            simple_distance(
+                lat,
+                lon,
+                p.get_pos().latitude,
+                p.get_pos().longitude
             )
+        )
+        for p in carparks
+    ]
+    carparks_with_distance.sort(key=lambda t: t[1])
 
-    remove_keyboard = types.ReplyKeyboardRemove()
+    # Determine the map provider to use for building URLs
+    with UserSettingsManager(message.from_user) as s:
+        build_url = (
+            build_googlemaps_url
+            if s.map_provider == MapProvider.GOOGLE
+            else build_applemaps_url
+        )
 
-    # Sends the response message
+    buttons = {
+        f"{p.emojify_status()} "
+        f"{p.name.value}: {p.free_spaces} | {dist:.1f} km":
+            {"url": build_url(p.get_pos())}
+        for p, dist in carparks_with_distance
+    }
+
+    markup = util.quick_markup(buttons, row_width=1)
+
     with bot as api:
-        api.send_message(
-            message.chat.id,
-            response,
-            reply_markup=remove_keyboard
+        bot.update_inline_buttons(
+            message.from_user,
+            api.send_message(message.chat.id, "Nächste Parkplätze:", reply_markup=markup)
         )
 
 
@@ -178,39 +186,27 @@ def nav_helper(message: types.Message):
     """
     with UserSettingsManager(message.from_user) as settings:
         parking_spots = fetch_data(settings.user_type == UserType.VISITOR)
-        parking_spots.sort(key=lambda val : val.free_spaces, reverse=True)
+        parking_spots.sort(key=lambda p: p.free_spaces, reverse=True)
+
+        build_url = (
+            build_googlemaps_url
+            if settings.map_provider == MapProvider.GOOGLE
+            else build_applemaps_url
+        )
+        spots = {
+            f"{p.emojify_status()} {p.name.name}: {p.free_spaces}": {
+                "url": build_url(p.get_pos())
+            }
+            for p in parking_spots
+        }
+
+        buttons = util.quick_markup(spots, row_width=floor(sqrt(len(parking_spots))))
 
         with bot as api:
-            match(settings.map_provider):
-                case MapProvider.GOOGLE:
-                    spots = {
-                        (
-                            f"{spot.emojify_status()} "
-                            f"{spot.name.name}: {spot.free_spaces}"
-                        ): {
-                            "url" : build_googlemaps_url(spot.get_pos())
-                        } for spot in parking_spots}
-
-                    spots_buttons = util.quick_markup(
-                        spots,
-                        row_width=floor(sqrt(len(parking_spots)))
-                    )
-
-                    buttons_msg = api.send_message(
-                        message.chat.id,
-                        "Verfügbare Parkplätze:",
-                        reply_markup=spots_buttons
-                    )
-
-                    bot.update_inline_buttons(
-                        message.from_user,
-                        buttons_msg
-                    )
-                case MapProvider.APPLE:
-                    api.send_message(
-                        message.chat.id,
-                        "Noch nicht implementiert!"
-                )
+            bot.update_inline_buttons(
+                message.from_user,
+                api.send_message(message.chat.id, "Verfügbare Parkplätze:", reply_markup=buttons)
+            )
 
 
 @bot.api.message_handler(commands=["overview"])
