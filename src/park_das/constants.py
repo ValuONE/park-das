@@ -20,6 +20,7 @@ class CarParkNames(Enum):
     P32 = "Parkplatz P32"
     P41 = "Parkplatz P41"
     P44 = "Parkplatz P44"
+    HE = "Parkhaus Helmholtzstraße"
     M1 = "HNO Klinik M1"
     M2 = "Kliniken Michelsberg M2"
     M3 = "Frauenklinik M3"
@@ -52,6 +53,7 @@ CAR_PARK_LOCATIONS = {
         CarParkNames.P32: Location(9.957266, 48.42410),
         CarParkNames.P41: Location(9.958382, 48.42599),
         CarParkNames.P44: Location(9.962580, 48.42602),
+        CarParkNames.HE: Location(9.958027, 48.42585),
         CarParkNames.M1: Location(9.991174, 48.40938),
         CarParkNames.M2: Location(9.992269, 48.40819),
         CarParkNames.M3: Location(9.99374, 48.41076),
@@ -79,14 +81,13 @@ class MapProvider(SettingsEnum):
     UNDEFINED = auto()
 
     def __str__(self) -> str:
-        match(self):
+        match self:
             case MapProvider.APPLE:
                 return "Apple 🍎"
             case MapProvider.GOOGLE:
                 return "Google 🤖"
-            case MapProvider.UNDEFINED:
-                return "None"
 
+        return "None"
 
 class UserLanguage(SettingsEnum):
     EN = auto()
@@ -94,13 +95,13 @@ class UserLanguage(SettingsEnum):
     UNDEFINED = auto()
 
     def __str__(self) -> str:
-        match(self):
+        match self:
             case UserLanguage.DE:
                 return "Deutsch 🇩🇪"
             case UserLanguage.EN:
                 return "English 🇺🇸"
-            case UserLanguage.UNDEFINED:
-                return "None"
+
+        return "None"
 
 
 class UserType(SettingsEnum):
@@ -109,10 +110,10 @@ class UserType(SettingsEnum):
     UNDEFINED = auto()
 
     def __str__(self) -> str:
-        match(self):
+        match self:
             case UserType.VISITOR:
                 return "Besucher 🙋"
             case UserType.STUDENT:
                 return "Mitarbeiter 🧑‍🔬"
-            case UserType.UNDEFINED:
-                return "None"
+
+        return "None"
