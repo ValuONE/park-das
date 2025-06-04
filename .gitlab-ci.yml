@@ -1,6 +1,5 @@
 stages:
   - lint
-  - build
 
 pylint:
   stage: lint
@@ -10,16 +9,3 @@ pylint:
     - poetry install
     - poetry run pylint **/*.py
   allow_failure: false
-
-docker:
-  stage: build
-  image:
-    name: gcr.io/kaniko-project/executor:debug
-    entrypoint: [""]
-  script:
-    - /kaniko/executor
-        --context $CI_PROJECT_DIR
-        --dockerfile $CI_PROJECT_DIR/Dockerfile
-        --destination $CI_REGISTRY_IMAGE:latest
-  rules:
-    - if: $CI_COMMIT_BRANCH == "deploy" && $CI_PIPELINE_SOURCE == "push" # Only run when merging to deploy branch
