@@ -65,7 +65,7 @@ helmholtz_schema = {
             "selector": "h2 span[style*='background-color:#3FA535']",
             "type": "text",
             "transform": "strip",
-            "default": ""
+            "default": "0"
         }
     ]
 }
