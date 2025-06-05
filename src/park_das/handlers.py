@@ -3,11 +3,10 @@ from json import loads
 
 from telebot import types, util, formatting
 
-from .navigation_builders import build_routing_data
 from .scrapper import get_data
 from .models import UserSettingsManager, UserSettings
 from .constants import MapProvider, UserType, UserLanguage
-from .distance import simple_distance
+from .util import simple_distance, build_routing_data
 
 from .bot import bot
 
@@ -18,8 +17,7 @@ async def start_handler(message: types.Message):
         async with UserSettingsManager(message.from_user) as s:
             if s.user_type == UserType.UNDEFINED:
                 s.language = UserLanguage.DE
-                s.map_provider = MapProvider.GOOGLE
-                s.user_type = UserType.STUDENT
+                s.user_type = UserType.VISITOR
         await api.send_message(
             message.chat.id,
             formatting.format_text(
@@ -210,7 +208,12 @@ async def navigation_handler(message: types.Message):
             async def handle_navigation_callback(cb : types.CallbackQuery):
                 await api.answer_callback_query(
                     cb.id,
-                    "⚠️ Es ist kein Kartenanbieter gesetzt ⚠️",
+                    formatting.format_text(
+                        "⚠️",
+                        "",
+                        "Bitte erst einen Kartenanbieter mit",
+                        "/settings auswählen!"
+                    ),
                     True
                 )
 
