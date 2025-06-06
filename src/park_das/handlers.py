@@ -152,7 +152,7 @@ async def location_handler(message: types.Message):
                     p.get_pos().longitude
                 )
             )
-            for p in carparks
+            for p in carparks if p.free_spaces > 0
         ]
         carparks_with_distance.sort(key=lambda t: t[1])
 
@@ -190,7 +190,7 @@ async def navigation_handler(message: types.Message):
         spots = {
             f"{p.emojify_status()} {p.name.name}: {p.free_spaces}":
                 build_routing_data(p.get_pos(), s.map_provider)
-            for p in parking_spots
+            for p in parking_spots if p.free_spaces > 0
         }
 
         buttons = util.quick_markup(spots, row_width=floor(sqrt(len(parking_spots))))
