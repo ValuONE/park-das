@@ -42,9 +42,11 @@ class CarPark:
         ratio = self.free_spaces / self.total_spaces
         if ratio > 0.25:
             return "✅"
-        if 0.05 < ratio < 0.25:
+        if 0.1 <= ratio < 0.25:
             return "⚠️"
-        return "❌"
+        if 0.0 < ratio < 0.1:
+            return "🛑"
+        return "⛔️"
 
     def to_pretty(self):
         """
