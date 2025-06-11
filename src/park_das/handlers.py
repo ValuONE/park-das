@@ -1,12 +1,14 @@
 from math import sqrt, floor
 from json import loads
 
+from aiohttp import request
+
 from telebot import types, util, formatting
 
 from .scrapper import get_data
 from .models import UserSettingsManager, UserSettings
 from .constants import MapProvider, UserType, UserLanguage
-from .util import simple_distance, build_routing_data
+from .util import haversine_distance, build_routing_data, static_map
 
 from .bot import bot
 
@@ -145,11 +147,9 @@ async def location_handler(message: types.Message):
         carparks_with_distance = [
             (
                 p,
-                simple_distance(
-                    s.last_location.latitude,
-                    s.last_location.longitude,
-                    p.get_pos().latitude,
-                    p.get_pos().longitude
+                haversine_distance(
+                    s.last_location,
+                    p.get_pos()
                 )
             )
             for p in carparks if p.free_spaces > 0
@@ -158,7 +158,7 @@ async def location_handler(message: types.Message):
 
         # Determine the map provider to use for building URLs
         buttons = {
-            f"{p.emojify_status()} "
+            f"{p.occupancy_level()} "
             f"{p.name.value}: {p.free_spaces} | {dist:.1f} km":
                 build_routing_data(p.get_pos(), s.map_provider)
             for p, dist in carparks_with_distance
@@ -186,36 +186,47 @@ async def navigation_handler(message: types.Message):
     async with UserSettingsManager(message.from_user) as s:
         parking_spots = await get_data(s.user_type == UserType.VISITOR)
         parking_spots.sort(key=lambda p: p.free_spaces, reverse=True)
+        parking_spots = [p for p in parking_spots if not p.name.name.startswith("M")]
+
+        # At most 9, as double digits cannot be displayed on markers
+        while len(parking_spots) > 9:
+            parking_spots.pop()
 
         spots = {
-            f"{p.emojify_status()} {p.name.name}: {p.free_spaces}":
+            f"{parking_spots.index(p) + 1}: {p.free_spaces} {p.occupancy_level()}":
                 build_routing_data(p.get_pos(), s.map_provider)
             for p in parking_spots if p.free_spaces > 0
         }
 
-        buttons = util.quick_markup(spots, row_width=floor(sqrt(len(parking_spots))))
-
-        async with bot as api:
-            sent = await api.send_message(
-                message.chat.id,
-                "Verfügbare Parkplätze:",
-                reply_markup=buttons
-            )
-
-            await bot.update_inline_buttons(message.from_user, sent)
-
-            @bot.api.callback_query_handler(lambda cb : cb.message.message_id == sent.message_id)
-            async def handle_navigation_callback(cb : types.CallbackQuery):
-                await api.answer_callback_query(
-                    cb.id,
-                    formatting.format_text(
-                        "⚠️",
-                        "",
-                        "Bitte erst einen Kartenanbieter mit",
-                        "/settings auswählen!"
-                    ),
-                    True
+        # Fetch map and send as photo
+        nav_map = static_map(parking_spots)
+        async with request("GET", nav_map) as req:
+            async with bot as api:
+                buttons = util.quick_markup(
+                    spots,
+                    row_width=floor(sqrt(len(parking_spots)))
                 )
+
+                sent = await api.send_photo(
+                    message.chat.id,
+                    await req.read(),
+                    reply_markup=buttons
+                )
+
+                await bot.update_inline_buttons(message.from_user, sent)
+
+                @bot.api.callback_query_handler(lambda c : c.message.message_id == sent.message_id)
+                async def handle_navigation_callback(cb : types.CallbackQuery):
+                    await api.answer_callback_query(
+                        cb.id,
+                        formatting.format_text(
+                            "⚠️",
+                            "",
+                            "Bitte erst einen Kartenanbieter mit",
+                            "/settings auswählen!"
+                        ),
+                        True
+                    )
 
 
 @bot.api.message_handler(commands=["overview"])

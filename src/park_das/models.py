@@ -4,7 +4,7 @@ from typing import Optional
 import aiosqlite
 
 from telebot.util import quick_markup
-from telebot.types import Location, User
+from telebot.types import Location, User, InlineKeyboardMarkup
 
 from .constants import CarParkNames, UserLanguage, UserType, MapProvider
 
@@ -32,34 +32,35 @@ class CarPark:
     def get_pos(self) -> Location:
         """
         Returns the geographic position (latitude, longitude) of the car park.
-    
-        Returns:
-            tuple[float, float]: A tuple containing the latitude and longitude of the car park.
+
+        :return: A telegram location containing the latitude and longitude of the car park.
         """
         return self.name.get_pos()
 
-    def emojify_status(self) -> str:
+    def occupancy_level(self, as_emoji = True) -> str:
+        """
+        Get a visual representation of the current occupancy level
+
+        :param as_emoji: If set, the representation will be emoji
+        :return: Either an emoji or a color
+        """
         ratio = self.free_spaces / self.total_spaces
         if ratio > 0.25:
-            return "✅"
+            return "✅" if as_emoji else "green"
         if 0.1 <= ratio < 0.25:
-            return "⚠️"
+            return "⚠️" if as_emoji else "yellow"
         if 0.0 < ratio < 0.1:
-            return "🛑"
-        return "⛔️"
+            return "🛑" if as_emoji else "red"
+        return "⛔️" if as_emoji else "gray"
 
-    def to_pretty(self):
+    def to_pretty(self) -> str:
         """
         Formats a car park's information into a string.
-    
-        Args:
-            park (CarPark): The car park to format.
-    
-        Returns:
-            str: A formatted string containing the car park's name, free spaces and a status icon.
+
+        :return: A formatted string containing the car park's name, free spaces and a status icon.
         """
         return (f"{self.name.value}: {self.free_spaces} frei | "
-                f"{self.emojify_status()}\n")
+                f"{self.occupancy_level()}\n")
 
 @dataclass
 class UserSettings:
@@ -79,7 +80,12 @@ class UserSettings:
         )
 
     @classmethod
-    def markup_buttons(cls):
+    def markup_buttons(cls) -> InlineKeyboardMarkup:
+        """
+        Creates inline buttons to attach to a message
+
+        :return: A predefined set of inline buttons
+        """
         return quick_markup(
             {
                 "Sprache": {"callback_data" : "user_language"},
@@ -102,6 +108,11 @@ class UserSettingsManager:
         return cls._instance
 
     def __init__(self, user : User | None):
+        """
+        Opens database to access user information
+
+        :param user: Telegram user to access
+        """
         self._user = user
 
     async def _load_settings(self) -> UserSettings:

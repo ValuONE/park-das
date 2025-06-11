@@ -10,7 +10,7 @@ class ParkBot:
 
     def __init__(self) -> None:
         try:
-            token = os.environ["TOKEN"]
+            token = os.environ["TELEGRAM_TOKEN"]
         except KeyError as e:
             raise ValueError("TOKEN environment variable is not set or is empty.") from e
 
@@ -60,17 +60,18 @@ class ParkBot:
     @property
     def api(self) -> AsyncTeleBot:
         """
-        Access to the bot API
+        Bot API accessor
+
+        :return: The telegram bot API
         """
         return self._bot
 
     async def update_inline_buttons(self, user : types.User | None, message : types.Message):
         """
         Ensures only one set of inline buttons is present.
-        
-        Args:
-            user (User) : User the inline buttons are sent to
-            message (Message) : New message containing inline buttons
+
+        :param user: User the inline buttons are sent to
+        :param message: New message containing inline buttons
         """
         async with UserSettingsManager(user) as s:
             if s.inline_buttons is not None:

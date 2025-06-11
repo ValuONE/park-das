@@ -98,6 +98,11 @@ WORKER_PARK_LOCATIONS: list[CarParkNames] = [
 class SettingsEnum(Enum):
     @classmethod
     def markup_buttons(cls) -> InlineKeyboardMarkup:
+        """
+        Creates inline buttons based on the available settings
+
+        :return: A set of inline buttons to attach to a message
+        """
         options = {str(opt): {"callback_data": dumps(
             {
                 cls.__name__: opt.value
@@ -144,6 +149,7 @@ class UserLanguage(SettingsEnum):
 class UserType(SettingsEnum):
     VISITOR = auto()
     STUDENT = auto()
+    CITY = auto()
     UNDEFINED = auto()
 
     def __str__(self) -> str:
@@ -152,5 +158,7 @@ class UserType(SettingsEnum):
                 return "Besucher 🙋"
             case UserType.STUDENT:
                 return "Mitarbeiter 🧑‍🔬"
+            case UserType.CITY:
+                return "Innenstadt 🏙️"
 
         return "None"
