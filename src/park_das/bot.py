@@ -2,7 +2,9 @@
 
 from telebot.async_telebot import AsyncTeleBot
 from telebot.asyncio_storage import StateMemoryStorage
-from telebot import types
+from telebot import types, formatting
+
+import i18n
 
 from .models import UserSettingsManager, InlineButtons
 
@@ -22,34 +24,36 @@ class ParkBot:
         Creates bot commands, does all initialization
         """
         await self.api.delete_my_commands()
-        await self.api.set_my_commands(
-            [
-                types.BotCommand(
-                    "start",
-                    "Initalisiert den Bot und listet verfügbare Kommandos auf."
-                ),
-                types.BotCommand(
-                    "help",
-                    "Listet verfügbare Kommandos auf."
-                ),
-                types.BotCommand(
-                    "settings",
-                    "Listet die aktuellen Einstellungen."
-                ),
-                types.BotCommand(
-                    "overview",
-                    "Listet alle verfügbaren Parkplätze auf."
-                ),
-                types.BotCommand(
-                    "live",
-                    "Ermöglicht senden des aktuellen Standorts."
-                ),
-                types.BotCommand(
-                    "navigation",
-                    "Listet alle verfügbaren Parkplätze als navigierbare Buttons auf."
-                )
-            ]
-        )
+        for lang in i18n.get("available_locales"):
+            await self.api.set_my_commands(
+                [
+                    types.BotCommand(
+                        "start",
+                        i18n.t("commands.start", lang)
+                    ),
+                    types.BotCommand(
+                        "help",
+                        i18n.t("commands.help", lang)
+                    ),
+                    types.BotCommand(
+                        "settings",
+                        i18n.t("commands.settings", lang)
+                    ),
+                    types.BotCommand(
+                        "overview",
+                        i18n.t("commands.overview", lang)
+                    ),
+                    types.BotCommand(
+                        "live",
+                        i18n.t("commands.live", lang)
+                    ),
+                    types.BotCommand(
+                        "navigation",
+                        i18n.t("commands.navigation", lang)
+                    )
+                ],
+                language_code=lang
+            )
 
     async def __aenter__(self) -> AsyncTeleBot:
         return self._bot
@@ -79,6 +83,21 @@ class ParkBot:
                                               s.inline_buttons.message_id)
             s.inline_buttons = InlineButtons(message.chat.id, message.message_id)
 
+    async def help_message(self, user: types.User | None) -> str:
+        """
+        Generates help message in the user's selected language
+
+        :param user: User for whom to generate the message
+        :return: Formatted, translated help message
+        """
+        async with UserSettingsManager(user) as s:
+            cmds = await bot.api.get_my_commands(scope=None, language_code=s.language.value)
+            cmds_str = "\n".join([f"/{cmd.command} : {cmd.description}" for cmd in cmds])
+            return formatting.format_text(
+                formatting.mbold(f"{i18n.t('strings.help_msg', s.language.value)}:"),
+                cmds_str
+            )
+        return ""
 
 # Global instance to be used when doing anything with the API
 bot = ParkBot()

@@ -1,0 +1,11 @@
+de:
+  commands:
+    start: Startet oder setzt den Bot zurück.
+    help: Listet alle verfügbaren Kommandos auf.
+    settings: Alle Einstellungen anzeigen und anpassen.
+    overview: Zeigt alle Parkplätze und aktuelle Auslastung an.
+    live: Standortabhängige Navigation zu nahen freien Parkplätzen.
+    navigation: Zeigt freie Parkplätze auf Karte an, ermöglicht Navigation.
+  strings:
+    help_msg: Folgende Befehle sind verfügbar
+    welcome_msg: 🤖 Willkommen bei ParkBot 🚘

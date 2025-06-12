@@ -1,0 +1,11 @@
+en:
+  commands:
+    start: Starts or restarts the bot.
+    help: Lists all available commands.
+    settings: View and edit available settings.
+    overview: View all parking spots and their occupancy level.
+    live: Location-based navigation to closest free parking spots.
+    navigation: View free parking spots on a map and navigate to them.
+  strings:
+    help_msg: The following commands are available
+    welcome_msg: 🤖 Welcome to ParkBot 🚘

@@ -1,6 +1,8 @@
 from math import sqrt, floor
 from json import loads
 
+import i18n
+
 from aiohttp import request
 
 from telebot import types, util, formatting
@@ -23,9 +25,9 @@ async def start_handler(message: types.Message):
         await api.send_message(
             message.chat.id,
             formatting.format_text(
-                formatting.mitalic("🤖 Willkommen bei ParkBot 🚘"),
+                formatting.mitalic(i18n.t("strings.welcome_msg", s.language.value)),
                 "",
-                await help_message()
+                await bot.help_message(message.from_user)
             ),
             parse_mode="Markdown"
         )
@@ -36,18 +38,9 @@ async def help_handler(message: types.Message):
     async with bot as api:
         await api.send_message(
             message.chat.id,
-            await help_message(),
+            await bot.help_message(message.from_user),
             parse_mode="Markdown"
         )
-
-
-async def help_message() -> str:
-    cmds = await bot.api.get_my_commands(scope=None, language_code=None)
-    cmds_str = "\n".join([f"/{cmd.command} : {cmd.description}" for cmd in cmds])
-    return formatting.format_text(
-        formatting.mbold("Folgende Befehle sind verfügbar:"),
-        cmds_str
-    )
 
 
 @bot.api.message_handler(commands=["settings"])

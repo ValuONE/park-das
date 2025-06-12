@@ -132,9 +132,9 @@ class MapProvider(SettingsEnum):
 
 
 class UserLanguage(SettingsEnum):
-    EN = auto()
-    DE = auto()
-    UNDEFINED = auto()
+    EN = "en"
+    DE = "de"
+    UNDEFINED = "undefined"
 
     def __str__(self) -> str:
         match self:
