@@ -25,7 +25,7 @@ async def start_handler(message: types.Message):
         await api.send_message(
             message.chat.id,
             formatting.format_text(
-                formatting.mitalic(i18n.t("strings.welcome_msg", s.language.value)),
+                formatting.mitalic(i18n.t("strings.welcome_msg", str(s.language))),
                 "",
                 await bot.help_message(message.from_user)
             ),
@@ -54,37 +54,38 @@ async def settings_handler(message: types.Message):
             sent = await api.send_message(
                 message.chat.id,
                 str(s),
-                reply_markup=UserSettings.markup_buttons()
+                reply_markup=UserSettings.markup_buttons(str(s.language))
             )
 
             await bot.update_inline_buttons(message.from_user, sent)
 
             @bot.api.callback_query_handler(lambda cb : cb.message.message_id == sent.message_id)
             async def handle_settings_callback(cb : types.CallbackQuery):
+                lang = str(s.language)
                 match(cb.data):
                     case "user_language":
                         await api.edit_message_reply_markup(
                             sent.chat.id,
                             sent.message_id,
-                            reply_markup=UserLanguage.markup_buttons()
+                            reply_markup=UserLanguage.markup_buttons(lang)
                         )
                     case "map_provider":
                         await api.edit_message_reply_markup(
                             sent.chat.id,
                             sent.message_id,
-                            reply_markup=MapProvider.markup_buttons()
+                            reply_markup=MapProvider.markup_buttons(lang)
                         )
                     case "user_type":
                         await api.edit_message_reply_markup(
                             sent.chat.id,
                             sent.message_id,
-                            reply_markup=UserType.markup_buttons()
+                            reply_markup=UserType.markup_buttons(lang)
                         )
                     case "back":
                         await api.edit_message_reply_markup(
                             sent.chat.id,
                             sent.message_id,
-                            reply_markup=UserSettings.markup_buttons()
+                            reply_markup=UserSettings.markup_buttons(lang)
                         )
                     case _:
                         update = loads(cb.data if cb.data else "")
@@ -94,12 +95,13 @@ async def settings_handler(message: types.Message):
                             MapProvider.__name__ in update else s.map_provider
                         s.user_type = UserType(update[UserType.__name__]) if \
                             UserType.__name__ in update else s.user_type
+                        lang = str(s.language)
 
                         await api.edit_message_text(
                             str(s),
                             sent.chat.id,
                             sent.message_id,
-                            reply_markup=UserSettings.markup_buttons()
+                            reply_markup=UserSettings.markup_buttons(lang)
                         )
 
                 await api.answer_callback_query(cb.id)
@@ -107,20 +109,24 @@ async def settings_handler(message: types.Message):
 
 @bot.api.message_handler(commands=["live"])
 async def live_handler(message: types.Message):
-    markup = types.ReplyKeyboardMarkup(
-        row_width=1, resize_keyboard=True, one_time_keyboard=True
-    )
-    button_geo = types.KeyboardButton(
-        text="📍 Standort senden", request_location=True
-    )
-    markup.add(button_geo)
+    async with UserSettingsManager(message.from_user) as s:
+        lang = str(s.language)
 
-    async with bot as api:
-        await api.send_message(
-            message.chat.id,
-            "Tippe auf „📍 Standort senden“, um mir deine aktuelle Position zu schicken.",
-            reply_markup=markup,
+        markup = types.ReplyKeyboardMarkup(
+            row_width=1, resize_keyboard=True, one_time_keyboard=True
         )
+
+        button_geo = types.KeyboardButton(
+            text=i18n.t("strings.live_btn", lang), request_location=True
+        )
+        markup.add(button_geo)
+
+        async with bot as api:
+            await api.send_message(
+                message.chat.id,
+                i18n.t("strings.live_msg", lang),
+                reply_markup=markup,
+            )
 
 
 @bot.api.message_handler(content_types=["location"])
@@ -164,7 +170,7 @@ async def location_handler(message: types.Message):
                 message.from_user,
                 await api.send_message(
                     message.chat.id,
-                    "Nächste Parkplätze:",
+                    f"{i18n.t('strings.location_msg', str(s.language))}:",
                     reply_markup=markup
                 )
             )
@@ -213,10 +219,7 @@ async def navigation_handler(message: types.Message):
                     await api.answer_callback_query(
                         cb.id,
                         formatting.format_text(
-                            "⚠️",
-                            "",
-                            "Bitte erst einen Kartenanbieter mit",
-                            "/settings auswählen!"
+                            i18n.t("strings.mapprovider_not_set", str(s.language))
                         ),
                         True
                     )
@@ -229,9 +232,10 @@ async def overview_handler(message: types.Message):
     Displays an overview of all car parks with their free spaces.
     """
     async with UserSettingsManager(message.from_user) as s:
+        lang = str(s.language)
         is_visitor = s.user_type is UserType.VISITOR
         car_parks = await get_data(is_visitor)
-        response = "🎓 Universitätsparkplätze:\n\n"
+        response = f"{i18n.t('strings.overview_campus', lang)}:\n\n"
 
         city_car_parks = []
         for car_park in car_parks:
@@ -239,12 +243,12 @@ async def overview_handler(message: types.Message):
                 city_car_parks.append(car_park)
                 continue
 
-            response += car_park.to_pretty()
+            response += car_park.to_pretty(lang)
 
         if len(city_car_parks) > 0:
-            response += "\n🏙️ Stadtparkplätze:\n\n"
+            response += f"\n{i18n.t('strings.overview_city', lang)}:\n\n"
             for car_park in city_car_parks:
-                response += car_park.to_pretty()
+                response += car_park.to_pretty(lang)
 
         async with bot as api:
             await api.send_message(message.chat.id, response)

@@ -1,5 +1,7 @@
-﻿from enum import Enum, auto
+﻿from enum import Enum
 from json import dumps
+
+import i18n
 
 from telebot.util import quick_markup
 from telebot.types import Location, InlineKeyboardMarkup
@@ -36,7 +38,6 @@ class CarParkNames(Enum):
             if member.value == value:
                 return member
         raise KeyError(f"No matching enum member for '{value}' found.")
-
 
 CAR_PARK_LOCATIONS = {
     CarParkNames.P09: Location(9.942359, 48.41912),
@@ -94,71 +95,53 @@ WORKER_PARK_LOCATIONS: list[CarParkNames] = [
     CarParkNames.HE
 ]
 
-
 class SettingsEnum(Enum):
     @classmethod
-    def markup_buttons(cls) -> InlineKeyboardMarkup:
+    def markup_buttons(cls, lang : str) -> InlineKeyboardMarkup:
         """
         Creates inline buttons based on the available settings
 
         :return: A set of inline buttons to attach to a message
         """
-        options = {str(opt): {"callback_data": dumps(
+        options = {i18n.t(repr(opt), lang): {"callback_data": dumps(
             {
                 cls.__name__: opt.value
             }
-        )} for opt in cls}
-        options.pop("None")
-        options["<< Zurück"] = {"callback_data": "back"}
+        )} for opt in cls if repr(opt) != "settings.undefined"}
+        options[i18n.t("settings.back", lang)] = {"callback_data": "back"}
         return quick_markup(
             options,
-            row_width=len(cls) - 1
+            row_width=1
         )
 
+    def __repr__(self) -> str:
+        """
+        Get valid i18n key
+
+        :return: i18n key
+        """
+        return self.value
 
 class MapProvider(SettingsEnum):
-    APPLE = auto()
-    GOOGLE = auto()
-    UNDEFINED = auto()
-
-    def __str__(self) -> str:
-        match self:
-            case MapProvider.APPLE:
-                return "Apple 🍎"
-            case MapProvider.GOOGLE:
-                return "Google 🤖"
-
-        return "None"
-
+    APPLE = "settings.mapprovider.apple"
+    GOOGLE = "settings.mapprovider.google"
+    UNDEFINED = "settings.undefined"
 
 class UserLanguage(SettingsEnum):
-    EN = "en"
-    DE = "de"
-    UNDEFINED = "undefined"
+    EN = "settings.language.en"
+    DE = "settings.language.de"
+    UNDEFINED = "settings.undefined"
 
     def __str__(self) -> str:
-        match self:
-            case UserLanguage.DE:
-                return "Deutsch 🇩🇪"
-            case UserLanguage.EN:
-                return "English 🇺🇸"
+        """
+        Get enum value as language code
 
-        return "None"
-
+        :return: Language code string
+        """
+        return self.name.lower()
 
 class UserType(SettingsEnum):
-    VISITOR = auto()
-    STUDENT = auto()
-    CITY = auto()
-    UNDEFINED = auto()
-
-    def __str__(self) -> str:
-        match self:
-            case UserType.VISITOR:
-                return "Besucher 🙋"
-            case UserType.STUDENT:
-                return "Mitarbeiter 🧑‍🔬"
-            case UserType.CITY:
-                return "Innenstadt 🏙️"
-
-        return "None"
+    VISITOR = "settings.usertype.visitor"
+    STUDENT = "settings.usertype.student"
+    CITY = "settings.usertype.city"
+    UNDEFINED = "settings.undefined"

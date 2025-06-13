@@ -42,6 +42,7 @@ def build_routing_data(location : Location, provider : MapProvider) -> Dict[str,
         case _:
             return { "callback_data" : "Provider not set!" }
 
+# https://developers.google.com/maps/documentation/urls/get-started?hl=de#directions-action
 def _build_googlemaps_url(location : Location) -> str:
     """
     Creates a routable link to the provided location on Google Maps
@@ -49,11 +50,10 @@ def _build_googlemaps_url(location : Location) -> str:
     :param location: Location object containing latitude and longitude of the destination
     :return: Routable link to the location on Google Maps
     """
-
-    # https://developers.google.com/maps/documentation/urls/get-started?hl=de#directions-action
     return "https://www.google.com/maps/dir/?api=1" +\
             f"&destination={location.latitude},{location.longitude}&travelmode=driving"
 
+# https://developer.apple.com/documentation/mapkitjs/adding_a_link_to_your_app
 def _build_applemaps_url(location: Location) -> str:
     """
     Creates a routable link to the provided location on Apple Maps
@@ -61,8 +61,6 @@ def _build_applemaps_url(location: Location) -> str:
     :param location: Location object containing latitude and longitude of the destination
     :return: Routable link to the location on Apple Maps
     """
-
-    # https://developer.apple.com/documentation/mapkitjs/adding_a_link_to_your_app
     return f"https://maps.apple.com/?daddr={location.latitude},{location.longitude}&dirflg=d"
 
 # https://developers.google.com/maps/documentation/maps-static/start
@@ -74,10 +72,14 @@ def static_map(markers: List[CarPark]) -> str:
     :param markers: List of objects that contain the location & parking info
     :return: Download link to static map
     """
+    try:
+        api_key = os.environ["GOOGLEMAPS_API_KEY"]
+    except KeyError as e:
+        raise ValueError("GOOGLEMAPS_API_KEY environment variable is not set or is empty.") from e
 
     base = "https://maps.googleapis.com/maps/api/staticmap?"
     params = []
-    params.append(("key", os.environ["GOOGLEMAPS_API_KEY"]))
+    params.append(("key", api_key))
     params.append(("size", "512x256"))
     params.append(("scale", "2"))
     params.append(("maptype", "roadmap"))

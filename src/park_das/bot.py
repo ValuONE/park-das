@@ -14,7 +14,7 @@ class ParkBot:
         try:
             token = os.environ["TELEGRAM_TOKEN"]
         except KeyError as e:
-            raise ValueError("TOKEN environment variable is not set or is empty.") from e
+            raise ValueError("TELEGRAM_TOKEN environment variable is not set or is empty.") from e
 
         data = StateMemoryStorage()
         self._bot = AsyncTeleBot(token, state_storage=data)
@@ -91,10 +91,10 @@ class ParkBot:
         :return: Formatted, translated help message
         """
         async with UserSettingsManager(user) as s:
-            cmds = await bot.api.get_my_commands(scope=None, language_code=s.language.value)
+            cmds = await bot.api.get_my_commands(scope=None, language_code=str(s.language))
             cmds_str = "\n".join([f"/{cmd.command} : {cmd.description}" for cmd in cmds])
             return formatting.format_text(
-                formatting.mbold(f"{i18n.t('strings.help_msg', s.language.value)}:"),
+                formatting.mbold(f"{i18n.t('strings.help_msg', str(s.language))}:"),
                 cmds_str
             )
         return ""

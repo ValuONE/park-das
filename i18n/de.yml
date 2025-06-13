@@ -9,3 +9,34 @@ de:
   strings:
     help_msg: Folgende Befehle sind verfügbar
     welcome_msg: 🤖 Willkommen bei ParkBot 🚘
+    live_btn: 📍 Standort senden
+    live_msg: Tippe auf „%{.live_btn}“, um deinen aktuelle Standort zu schicken.
+    location_msg: Nächste Parkplätze
+    mapprovider_not_set: |
+      ⚠️
+
+      Bitte erst einen Kartenanbieter mit
+      /settings auswählen!
+    overview_campus: 🎓 Universitätsparkplätze
+    overview_city: 🏙️ Stadtparkplätze
+    overview_msg: "%{name} : %{free} frei | %{occupancy}\n"
+  settings:
+    back: ◀️ Zurück
+    undefined: Nicht gesetzt ❌
+    options:
+      language: Sprache
+      language_curr: "Gewählte %{.language}:\t\t%{curr}"
+      mapprovider: Kartenanbieter
+      mapprovider_curr: "Gewählter %{.mapprovider}:\t\t%{curr}"
+      usertype: Nutzertyp
+      usertype_curr: "Ihr %{.usertype}:\t\t%{curr}"
+    usertype:
+      visitor: Besucher 🙋
+      student: Mitarbeiter 🧑‍🔬
+      city: Innenstadt 🏙️
+    mapprovider:
+      apple: Apple 🍎
+      google: Google 🤖
+    language:
+      de: Deutsch 🇩🇪
+      en: Englisch 🇺🇸

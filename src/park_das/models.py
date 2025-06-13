@@ -2,6 +2,7 @@
 from typing import Optional
 
 import aiosqlite
+import i18n
 
 from telebot.util import quick_markup
 from telebot.types import Location, User, InlineKeyboardMarkup
@@ -53,14 +54,17 @@ class CarPark:
             return "🛑" if as_emoji else "red"
         return "⛔️" if as_emoji else "gray"
 
-    def to_pretty(self) -> str:
+    def to_pretty(self, lang : str) -> str:
         """
         Formats a car park's information into a string.
 
         :return: A formatted string containing the car park's name, free spaces and a status icon.
         """
-        return (f"{self.name.value}: {self.free_spaces} frei | "
-                f"{self.occupancy_level()}\n")
+        return i18n.t("strings.overview_msg",
+                      name = self.name.value,
+                      free = self.free_spaces,
+                      occupancy = self.occupancy_level(),
+                      locale=lang)
 
 @dataclass
 class UserSettings:
@@ -71,16 +75,23 @@ class UserSettings:
     inline_buttons: Optional[InlineButtons] = None
 
     def __str__(self) -> str:
+        lang = str(self.language)
         return "\n".join(
             [
-                f"Gewählte Sprache:\t\t{str(self.language)}",
-                f"Karten Präferenz:\t\t{str(self.map_provider)}",
-                f"Nutzer Art:\t\t{str(self.user_type)}"
+                i18n.t("settings.options.language_curr",
+                       locale=lang,
+                       curr=i18n.t(repr(self.language), lang)),
+                i18n.t("settings.options.mapprovider_curr",
+                       locale=lang,
+                       curr=i18n.t(repr(self.map_provider), lang)),
+                i18n.t("settings.options.usertype_curr",
+                       locale=lang,
+                       curr=i18n.t(repr(self.user_type), lang))
             ]
         )
 
     @classmethod
-    def markup_buttons(cls) -> InlineKeyboardMarkup:
+    def markup_buttons(cls, lang : str) -> InlineKeyboardMarkup:
         """
         Creates inline buttons to attach to a message
 
@@ -88,9 +99,9 @@ class UserSettings:
         """
         return quick_markup(
             {
-                "Sprache": {"callback_data" : "user_language"},
-                "Kartenanbieter": {"callback_data" : "map_provider"},
-                "Nutzertyp": {"callback_data" : "user_type"}
+                i18n.t("settings.options.language", lang): {"callback_data" : "user_language"},
+                i18n.t("settings.options.mapprovider", lang): {"callback_data" : "map_provider"},
+                i18n.t("settings.options.usertype", lang): {"callback_data" : "user_type"}
             },
             row_width=1
         )
@@ -124,9 +135,9 @@ class UserSettingsManager:
                 """
                 CREATE TABLE IF NOT EXISTS settings (
                     user_id INTEGER PRIMARY KEY,
-                    language INTEGER NOT NULL,
-                    map_provider INTEGER NOT NULL,
-                    user_type INTEGER NOT NULL,
+                    language TEXT NOT NULL,
+                    map_provider TEXT NOT NULL,
+                    user_type TEXT NOT NULL,
                     longitude REAL,
                     latitude REAL,
                     chat_id INTEGER,
