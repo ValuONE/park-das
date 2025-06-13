@@ -1,11 +1,10 @@
 ﻿from enum import Enum
 from json import dumps
 
-import i18n
-
 from telebot.util import quick_markup
 from telebot.types import Location, InlineKeyboardMarkup
 
+import i18n
 
 class CarParkNames(Enum):
     P09 = "Parkplatz P09"

@@ -1,11 +1,11 @@
 from math import sqrt, floor
 from json import loads
 
-import i18n
-
 from aiohttp import request
 
 from telebot import types, util, formatting
+
+import i18n
 
 from .scrapper import get_data
 from .models import UserSettingsManager, UserSettings
@@ -252,3 +252,9 @@ async def overview_handler(message: types.Message):
 
         async with bot as api:
             await api.send_message(message.chat.id, response)
+
+
+@bot.api.message_handler(commands=["timing"])
+async def timing_handler(message: types.Message):
+    #await test()
+    pass

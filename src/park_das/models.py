@@ -2,10 +2,11 @@
 from typing import Optional
 
 import aiosqlite
-import i18n
 
 from telebot.util import quick_markup
 from telebot.types import Location, User, InlineKeyboardMarkup
+
+import i18n
 
 from .constants import CarParkNames, UserLanguage, UserType, MapProvider
 
