@@ -252,9 +252,3 @@ async def overview_handler(message: types.Message):
 
         async with bot as api:
             await api.send_message(message.chat.id, response)
-
-
-@bot.api.message_handler(commands=["timing"])
-async def timing_handler(message: types.Message):
-    #await test()
-    pass
