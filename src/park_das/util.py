@@ -1,7 +1,7 @@
 import os
 import math
 from urllib.parse import urlencode
-from typing import List, Dict
+from typing import List, Any, Tuple, Dict
 
 from telebot.types import Location
 
@@ -65,12 +65,14 @@ def _build_applemaps_url(location: Location) -> str:
     return f"https://maps.apple.com/?daddr={location.latitude},{location.longitude}&dirflg=d"
 
 # https://developers.google.com/maps/documentation/maps-static/start
-def static_map(markers: List[CarPark]) -> str:
+def static_map(markers: List[CarPark] | None = None, path: str | None = None) -> str:
     """
     Creates link to download a static map using the Google Maps API.
     The map is positioned and zoomed to show the provided locations as color coded markers.
+    Alternatively or additionally, an encoded path is drawn on the map.
 
-    :param markers: List of objects that contain the location & parking info
+    :param markers: List of objects that contain the location & parking info, defaults to None
+    :param path: Encoded path to be displayed, defaults to None
     :return: Download link to static map
     """
     try:
@@ -86,7 +88,61 @@ def static_map(markers: List[CarPark]) -> str:
     params.append(("maptype", "roadmap"))
     params.append(("map_id", "44f7ebc46b9403cff2633fe2"))
 
-    for marker in markers:
-        params.append(("markers", marker.to_map_marker(markers.index(marker) + 1)))
+    if markers is None and path is None:
+        raise ValueError("Neither markers nor path are provided!")
+    if markers is not None:
+        for marker in markers:
+            params.append(("markers", marker.to_map_marker(markers.index(marker) + 1)))
+    if path is not None:
+        params.append(("path", f"enc:{path}"))
 
     return base + urlencode(params)
+
+def routing_request(
+    origin: Location,
+    destination: Location,
+    lang: str
+) -> Tuple[str, Dict[str, Any]]:
+    """
+    Builds a google maps API request for provided origin and destination in provided language
+
+    :param origin: Origin Telegram location
+    :param destination: Target Telegram location
+    :param lang: Language the directions should be in
+    :return: Tuple containing the link and request data (json)
+    """
+    data = {
+        "origin": {
+            "location": {
+                "latLng": {
+                    "latitude": origin.latitude,
+                    "longitude": origin.longitude
+                },
+                "heading": 0 if origin.heading is None else origin.heading
+            }
+        },
+        "destination": {
+            "location": {
+                "latLng": {
+                    "latitude": destination.latitude,
+                    "longitude": destination.longitude
+                }
+            }
+        },
+        "travelMode": "DRIVE",
+        "computeAlternativeRoutes": False,
+        "languageCode": lang
+    }
+
+    try:
+        api_key = os.environ["GOOGLEMAPS_API_KEY"]
+    except KeyError as e:
+        raise ValueError("GOOGLEMAPS_API_KEY environment variable is not set or is empty.") from e
+
+    base = "https://routes.googleapis.com/directions/v2:computeRoutes?"
+
+    params = []
+    params.append(("key", api_key))
+    params.append(("fields", "*"))
+
+    return (base + urlencode(params), data)
