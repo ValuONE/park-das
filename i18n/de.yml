@@ -20,6 +20,9 @@ de:
     overview_campus: 🎓 Universitätsparkplätze
     overview_city: 🏙️ Stadtparkplätze
     overview_msg: "%{name} : %{free} frei | %{occupancy}\n"
+    command_unknown: |
+      Leider konnte die Eingabe nicht erkannt werden.
+      Bitte die Frage neu und anders formulieren.
   settings:
     back: ◀️ Zurück
     undefined: Nicht gesetzt ❌

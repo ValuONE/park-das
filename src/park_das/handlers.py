@@ -11,6 +11,7 @@ from .scrapper import get_data
 from .models import UserSettingsManager, UserSettings
 from .constants import MapProvider, UserType, UserLanguage
 from .util import haversine_distance, build_routing_data, static_map
+from .message_analyser import parse_command, BotCommands
 
 from .bot import bot
 
@@ -252,3 +253,40 @@ async def overview_handler(message: types.Message):
 
         async with bot as api:
             await api.send_message(message.chat.id, response)
+
+
+@bot.api.message_handler(commands=["timing"])
+async def timing_handler(message: types.Message):
+    """
+    Handles the /timing command.
+    """
+    await bot.api.reply_to(message, "Not implemented.")
+
+
+@bot.api.message_handler(content_types="text")
+async def free_text_handler(message: types.Message):
+    """
+    Handles free inputs from the user, such as text messages (or audio?).
+    Attempts to map the input to one of the available commands and executes it.
+    If not command could be detected, a clarification message is sent instead.
+    """
+    parsed = await parse_command(message.text)
+    match parsed:
+        case BotCommands.NAVIGATION:
+            await navigation_handler(message)
+        case BotCommands.TIMING:
+            await timing_handler(message)
+        case BotCommands.LIVE:
+            await live_handler(message)
+        case BotCommands.OVERVIEW:
+            await overview_handler(message)
+        case _:
+            async with UserSettingsManager(message.from_user) as s:
+                await bot.api.reply_to(
+                    message,
+                    formatting.format_text(
+                        i18n.t("strings.command_unknown", str(s.language)),
+                        await bot.help_message(message.from_user)
+                    ),
+                    parse_mode="Markdown"
+                )

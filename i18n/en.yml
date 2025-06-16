@@ -20,6 +20,9 @@ en:
     overview_campus: 🎓 University parking spots
     overview_city: 🏙️ City parking spots
     overview_msg: "%{name} : %{free} free | %{occupancy}\n"
+    command_unknown: |
+      Unfortunately the input could not be recognized.
+      Please formulate the question again and differently.
   settings:
     back: ◀️ Back
     undefined: Not set ❌
