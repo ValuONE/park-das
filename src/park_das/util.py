@@ -87,16 +87,6 @@ def static_map(markers: List[CarPark]) -> str:
     params.append(("map_id", "44f7ebc46b9403cff2633fe2"))
 
     for marker in markers:
-        loc = marker.get_pos()
-        params.append(
-            (
-                "markers",
-                (
-                    f"color:{marker.occupancy_level(False)}|"
-                    f"label:{markers.index(marker)+1}|"
-                    f"{loc.latitude},{loc.longitude}"
-                )
-            )
-        )
+        params.append(("markers", marker.to_map_marker(markers.index(marker) + 1)))
 
     return base + urlencode(params)

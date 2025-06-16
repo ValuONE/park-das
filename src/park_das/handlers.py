@@ -186,31 +186,32 @@ async def navigation_handler(message: types.Message):
     async with UserSettingsManager(message.from_user) as s:
         parking_spots = await get_data(s.user_type == UserType.VISITOR)
         parking_spots.sort(key=lambda p: p.free_spaces, reverse=True)
-        parking_spots = [p for p in parking_spots if not p.name.name.startswith("M")]
+        parking_spots = [
+            p for p in parking_spots if not p.name.name.startswith("M")
+            and p.free_spaces > 0
+        ]
 
         # At most 9, as double digits cannot be displayed on markers
         while len(parking_spots) > 9:
             parking_spots.pop()
 
-        spots = {
+        spot_btns = {
             f"{parking_spots.index(p) + 1}: {p.free_spaces} {p.occupancy_level()}":
                 build_routing_data(p.get_pos(), s.map_provider)
-            for p in parking_spots if p.free_spaces > 0
+            for p in parking_spots
         }
 
         # Fetch map and send as photo
         nav_map = static_map(parking_spots)
         async with request("GET", nav_map) as req:
             async with bot as api:
-                buttons = util.quick_markup(
-                    spots,
-                    row_width=floor(sqrt(len(parking_spots)))
-                )
-
                 sent = await api.send_photo(
                     message.chat.id,
                     await req.read(),
-                    reply_markup=buttons
+                    reply_markup=util.quick_markup(
+                        spot_btns,
+                        row_width=floor(sqrt(len(parking_spots)))
+                    )
                 )
 
                 await bot.update_inline_buttons(message.from_user, sent)
