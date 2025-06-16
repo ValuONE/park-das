@@ -31,6 +31,10 @@ class CarPark:
     free_spaces: int
     total_spaces: int
 
+    _RATIO_FREE = 0.25
+    _RATIO_CRITICAL = 0.1
+    _RATIO_FULL = 0.0
+
     def get_pos(self) -> Location:
         """
         Returns the geographic position (latitude, longitude) of the car park.
@@ -39,21 +43,20 @@ class CarPark:
         """
         return self.name.get_pos()
 
-    def occupancy_level(self, as_emoji = True) -> str:
+    def occupancy_level(self) -> str:
         """
         Get a visual representation of the current occupancy level
 
-        :param as_emoji: If set, the representation will be emoji
-        :return: Either an emoji or a color
+        :return: Emoji that signifies occupancy level
         """
         ratio = self.free_spaces / self.total_spaces
-        if ratio > 0.25:
-            return "✅" if as_emoji else "green"
-        if 0.1 <= ratio < 0.25:
-            return "⚠️" if as_emoji else "yellow"
-        if 0.0 < ratio < 0.1:
-            return "🛑" if as_emoji else "red"
-        return "⛔️" if as_emoji else "gray"
+        if ratio > self._RATIO_FREE:
+            return "✅"
+        if self._RATIO_CRITICAL <= ratio < self._RATIO_FREE:
+            return "⚠️"
+        if self._RATIO_FULL < ratio < self._RATIO_CRITICAL:
+            return "🛑"
+        return "⛔️"
 
     def to_pretty(self, lang : str) -> str:
         """
@@ -66,6 +69,36 @@ class CarPark:
                       free = self.free_spaces,
                       occupancy = self.occupancy_level(),
                       locale=lang)
+
+    # https://developers.google.com/maps/documentation/maps-static/start#Markers
+    def to_map_marker(self, index : int) -> str:
+        """
+        Generates a formatted marker for the google maps api
+
+        :param index: Index is used as label
+        :return: Marker as formatted string
+        """
+        loc = self.get_pos()
+        col = "gray"
+        size = "tiny"
+
+        ratio = self.free_spaces / self.total_spaces
+        if ratio > self._RATIO_FREE:
+            col = "green"
+            size = ""
+        if self._RATIO_CRITICAL <= ratio < self._RATIO_FREE:
+            col = "yellow"
+            size = "mid"
+        if self._RATIO_FULL < ratio < self._RATIO_CRITICAL:
+            col = "red"
+            size = "small"
+        return (
+            f"color:{col}|"
+            f"label:{index}|"
+            f"size:{size}|"
+            f"scale:2|"
+            f"{loc.latitude},{loc.longitude}"
+        )
 
 @dataclass
 class UserSettings:
