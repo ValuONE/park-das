@@ -10,7 +10,7 @@ import i18n
 from .scrapper import get_data
 from .models import UserSettingsManager, UserSettings
 from .constants import MapProvider, UserType, UserLanguage
-from .util import haversine_distance, build_routing_data, static_map
+from .util import haversine_distance, build_routing_data, static_map, routing_request
 from .message_analyser import parse_command, BotCommands
 
 from .bot import bot
@@ -202,7 +202,7 @@ async def navigation_handler(message: types.Message):
         }
 
         # Fetch map and send as photo
-        nav_map = static_map(parking_spots)
+        nav_map = static_map(markers=parking_spots)
         async with request("GET", nav_map) as req:
             async with bot as api:
                 sent = await api.send_photo(
