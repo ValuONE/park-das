@@ -1,0 +1,42 @@
+en:
+  commands:
+    start: Starts or restarts the bot.
+    help: Lists all available commands.
+    settings: View and edit available settings.
+    overview: View all parking spots and their occupancy level.
+    live: Location-based navigation to closest free parking spots.
+    navigation: View free parking spots on a map and navigate to them.
+  strings:
+    help_msg: The following commands are available
+    welcome_msg: 🤖 Welcome to ParkBot 🚘
+    live_btn: 📍 Send location
+    live_msg: Tap on „%{.live_btn}“ to send your current location.
+    location_msg: Closest parking spots
+    mapprovider_not_set: |
+      ⚠️
+      
+      Please select a map provider using
+      /settings first!
+    overview_campus: 🎓 University parking spots
+    overview_city: 🏙️ City parking spots
+    overview_msg: "%{name} : %{free} free | %{occupancy}\n"
+  settings:
+    back: ◀️ Back
+    undefined: Not set ❌
+    options:
+      language: Language
+      language_curr: "Selected %{.language}:\t\t%{curr}"
+      mapprovider: Map provider
+      mapprovider_curr: "Selected %{.mapprovider}:\t\t%{curr}"
+      usertype: User type
+      usertype_curr: "Your %{.usertype}:\t\t%{curr}"
+    usertype:
+      visitor: Visitor 🙋
+      student: Employee 🧑‍🔬
+      city: Inner city 🏙️
+    mapprovider:
+      apple: Apple 🍎
+      google: Google 🤖
+    language:
+      de: German 🇩🇪
+      en: English 🇺🇸

@@ -4,7 +4,9 @@ from typing import Optional
 import aiosqlite
 
 from telebot.util import quick_markup
-from telebot.types import Location, User
+from telebot.types import Location, User, InlineKeyboardMarkup
+
+import i18n
 
 from .constants import CarParkNames, UserLanguage, UserType, MapProvider
 
@@ -32,34 +34,38 @@ class CarPark:
     def get_pos(self) -> Location:
         """
         Returns the geographic position (latitude, longitude) of the car park.
-    
-        Returns:
-            tuple[float, float]: A tuple containing the latitude and longitude of the car park.
+
+        :return: A telegram location containing the latitude and longitude of the car park.
         """
         return self.name.get_pos()
 
-    def emojify_status(self) -> str:
+    def occupancy_level(self, as_emoji = True) -> str:
+        """
+        Get a visual representation of the current occupancy level
+
+        :param as_emoji: If set, the representation will be emoji
+        :return: Either an emoji or a color
+        """
         ratio = self.free_spaces / self.total_spaces
         if ratio > 0.25:
-            return "✅"
+            return "✅" if as_emoji else "green"
         if 0.1 <= ratio < 0.25:
-            return "⚠️"
+            return "⚠️" if as_emoji else "yellow"
         if 0.0 < ratio < 0.1:
-            return "🛑"
-        return "⛔️"
+            return "🛑" if as_emoji else "red"
+        return "⛔️" if as_emoji else "gray"
 
-    def to_pretty(self):
+    def to_pretty(self, lang : str) -> str:
         """
         Formats a car park's information into a string.
-    
-        Args:
-            park (CarPark): The car park to format.
-    
-        Returns:
-            str: A formatted string containing the car park's name, free spaces and a status icon.
+
+        :return: A formatted string containing the car park's name, free spaces and a status icon.
         """
-        return (f"{self.name.value}: {self.free_spaces} frei | "
-                f"{self.emojify_status()}\n")
+        return i18n.t("strings.overview_msg",
+                      name = self.name.value,
+                      free = self.free_spaces,
+                      occupancy = self.occupancy_level(),
+                      locale=lang)
 
 @dataclass
 class UserSettings:
@@ -70,21 +76,33 @@ class UserSettings:
     inline_buttons: Optional[InlineButtons] = None
 
     def __str__(self) -> str:
+        lang = str(self.language)
         return "\n".join(
             [
-                f"Gewählte Sprache:\t\t{str(self.language)}",
-                f"Karten Präferenz:\t\t{str(self.map_provider)}",
-                f"Nutzer Art:\t\t{str(self.user_type)}"
+                i18n.t("settings.options.language_curr",
+                       locale=lang,
+                       curr=i18n.t(repr(self.language), lang)),
+                i18n.t("settings.options.mapprovider_curr",
+                       locale=lang,
+                       curr=i18n.t(repr(self.map_provider), lang)),
+                i18n.t("settings.options.usertype_curr",
+                       locale=lang,
+                       curr=i18n.t(repr(self.user_type), lang))
             ]
         )
 
     @classmethod
-    def markup_buttons(cls):
+    def markup_buttons(cls, lang : str) -> InlineKeyboardMarkup:
+        """
+        Creates inline buttons to attach to a message
+
+        :return: A predefined set of inline buttons
+        """
         return quick_markup(
             {
-                "Sprache": {"callback_data" : "user_language"},
-                "Kartenanbieter": {"callback_data" : "map_provider"},
-                "Nutzertyp": {"callback_data" : "user_type"}
+                i18n.t("settings.options.language", lang): {"callback_data" : "user_language"},
+                i18n.t("settings.options.mapprovider", lang): {"callback_data" : "map_provider"},
+                i18n.t("settings.options.usertype", lang): {"callback_data" : "user_type"}
             },
             row_width=1
         )
@@ -102,6 +120,11 @@ class UserSettingsManager:
         return cls._instance
 
     def __init__(self, user : User | None):
+        """
+        Opens database to access user information
+
+        :param user: Telegram user to access
+        """
         self._user = user
 
     async def _load_settings(self) -> UserSettings:
@@ -113,9 +136,9 @@ class UserSettingsManager:
                 """
                 CREATE TABLE IF NOT EXISTS settings (
                     user_id INTEGER PRIMARY KEY,
-                    language INTEGER NOT NULL,
-                    map_provider INTEGER NOT NULL,
-                    user_type INTEGER NOT NULL,
+                    language TEXT NOT NULL,
+                    map_provider TEXT NOT NULL,
+                    user_type TEXT NOT NULL,
                     longitude REAL,
                     latitude REAL,
                     chat_id INTEGER,
