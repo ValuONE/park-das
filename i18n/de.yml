@@ -11,7 +11,8 @@ de:
     welcome_msg: 🤖 Willkommen bei ParkBot 🚘
     location_btn: 📍 Standort senden
     location_msg: Tippe auf „%{.location_btn}“, um deinen aktuelle Standort zu schicken.
-    next_spaces_msg: Nächste Parkplätze
+    recommended_space_msg: Der empfohlene Parkplatz ist
+    recommended_space_nav_msg: Navigation starten
     mapprovider_not_set: |
       ⚠️
 
