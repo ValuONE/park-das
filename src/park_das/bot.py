@@ -49,8 +49,8 @@ class ParkBot:
                         i18n.t("commands.overview", lang)
                     ),
                     types.BotCommand(
-                        "live",
-                        i18n.t("commands.live", lang)
+                        "recommend",
+                        i18n.t("commands.recommend", lang)
                     ),
                     types.BotCommand(
                         "navigation",

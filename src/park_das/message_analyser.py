@@ -20,7 +20,7 @@ _genai_client = genai.Client(
 class BotCommands(Enum):
     NAVIGATION = "Navigation"
     TIMER = "Timing"
-    LIVE = "Live"
+    RECOMMEND = "Recommend"
     OVERVIEW = "Overview"
     UNKNOWN = "Unknown"
 
@@ -73,7 +73,7 @@ async def parse_command(user_txt : str | None) -> BotCommands:
 
         Navigation: Sends a map of available parking spots which the user can use to navigate to a parking spot.
         Timing: Sends information about parking spot occupancy after a given time, so the user knows where to park on arrival.
-        Live: Prompts the user to share their location and recommends spots based on where they are.
+        Recommend: Prompts the user to share their location and recommends spots based on where they are.
         Overview: Lists all parking spots and their occupancy regardless of location as a text message.
         Unknown: Catch-all, asks user for clarification if no other command matches.
 
@@ -87,7 +87,7 @@ async def parse_command(user_txt : str | None) -> BotCommands:
             - "I will be on campus in 15 min."
             - "Tomorrow morning I will be in Ulm around 9."
             - "I need a parking spot when I arrive in half an hour."
-        Live:
+        Recommend:
             - "Where can I park nearby?"
             - "Is there a parking spot near O27?"
             - "Where is my best option to park currently?"
