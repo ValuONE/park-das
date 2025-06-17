@@ -33,6 +33,7 @@ class BotCommands(Enum):
                 return com
         return BotCommands.UNKNOWN
 
+#pylint: disable=too-few-public-methods
 class _ParsedTimeAndLocation(BaseModel):
     time_estimate : str | None = Field(
         description=(
@@ -48,6 +49,7 @@ class _ParsedTimeAndLocation(BaseModel):
         ),
         default=None
     )
+#pylint: enable=too-few-public-methods
 
 @dataclass
 class TimeLocation():
@@ -174,8 +176,8 @@ async def parse_time_location(user_txt : str | None) -> TimeLocation:
             dateparser.parse(parsed.time_estimate, languages=i18n.get("available_locales")),
             None if parsed.location == "None" else parsed.location
         )
-    else:
-        return TimeLocation()
+
+    return TimeLocation()
 
 async def test():
     test_sentences = [

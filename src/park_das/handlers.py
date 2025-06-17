@@ -19,10 +19,11 @@ from .message_analyser import parse_command, BotCommands, parse_time_location
 from .bot import bot
 
 
+#pylint: disable=too-few-public-methods
 class BotUserStates(StatesGroup):
     needs_date_time = State()
     timer_set = State()
-
+#pylint: enable=too-few-public-methods
 
 @bot.api.message_handler(commands=["start"])
 async def start_handler(message: types.Message):
