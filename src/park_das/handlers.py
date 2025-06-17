@@ -107,8 +107,8 @@ async def settings_handler(message: types.Message):
                 await api.answer_callback_query(cb.id)
 
 
-@bot.api.message_handler(commands=["live"])
-async def live_handler(message: types.Message):
+@bot.api.message_handler(commands=["recommend"])
+async def recommend_handler(message: types.Message):
     async with UserSettingsManager(message.from_user) as s:
         lang = str(s.language)
 
@@ -117,14 +117,14 @@ async def live_handler(message: types.Message):
         )
 
         button_geo = types.KeyboardButton(
-            text=i18n.t("strings.live_btn", lang), request_location=True
+            text=i18n.t("strings.location_btn", lang), request_location=True
         )
         markup.add(button_geo)
 
         async with bot as api:
             await api.send_message(
                 message.chat.id,
-                i18n.t("strings.live_msg", lang),
+                i18n.t("strings.location_msg", lang),
                 reply_markup=markup,
             )
 
@@ -170,7 +170,7 @@ async def location_handler(message: types.Message):
                 message.from_user,
                 await api.send_message(
                     message.chat.id,
-                    f"{i18n.t('strings.location_msg', str(s.language))}:",
+                    f"{i18n.t('strings.next_spaces_msg', str(s.language))}:",
                     reply_markup=markup
                 )
             )
