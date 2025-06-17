@@ -107,8 +107,8 @@ async def settings_handler(message: types.Message):
                 await api.answer_callback_query(cb.id)
 
 
-@bot.api.message_handler(commands=["live"])
-async def live_handler(message: types.Message):
+@bot.api.message_handler(commands=["recommend"])
+async def recommend_handler(message: types.Message):
     async with UserSettingsManager(message.from_user) as s:
         lang = str(s.language)
 
@@ -117,14 +117,14 @@ async def live_handler(message: types.Message):
         )
 
         button_geo = types.KeyboardButton(
-            text=i18n.t("strings.live_btn", lang), request_location=True
+            text=i18n.t("strings.location_btn", lang), request_location=True
         )
         markup.add(button_geo)
 
         async with bot as api:
             await api.send_message(
                 message.chat.id,
-                i18n.t("strings.live_msg", lang),
+                i18n.t("strings.location_msg", lang),
                 reply_markup=markup,
             )
 
@@ -141,36 +141,36 @@ async def location_handler(message: types.Message):
         s.last_location = message.location
         is_visitor = s.user_type == UserType.VISITOR
 
-        carparks = await get_data(is_visitor)
-
-        carparks_with_distance = [
-            (
-                p,
-                haversine_distance(
-                    s.last_location,
-                    p.get_pos()
+        closest_park = sorted(
+            [
+                (
+                    p,
+                    haversine_distance(
+                        s.last_location,
+                        p.get_pos()
+                    )
                 )
-            )
-            for p in carparks if p.free_spaces > 0
-        ]
-        carparks_with_distance.sort(key=lambda t: t[1])
+                for p in await get_data(is_visitor)
+                if p.occupancy_level(False) not in ["gray", "red"]
+            ],
+            key=lambda t: t[1]
+        )[0][0]
 
         # Determine the map provider to use for building URLs
-        buttons = {
-            f"{p.occupancy_level()} "
-            f"{p.name.value}: {p.free_spaces} | {dist:.1f} km":
-                build_routing_data(p.get_pos(), s.map_provider)
-            for p, dist in carparks_with_distance
+        button = {
+            f"{i18n.t('strings.recommended_space_nav_msg', str(s.language))}": 
+                build_routing_data(closest_park.get_pos(), s.map_provider)
         }
 
-        markup = util.quick_markup(buttons, row_width=1)
+        markup = util.quick_markup(button, row_width=1)
 
         async with bot as api:
             await bot.update_inline_buttons(
                 message.from_user,
                 await api.send_message(
                     message.chat.id,
-                    f"{i18n.t('strings.location_msg', str(s.language))}:",
+                    f"{i18n.t('strings.recommended_space_msg', str(s.language))}:"
+                    f"\n\n{closest_park.to_pretty(str(s.language))}",
                     reply_markup=markup
                 )
             )
