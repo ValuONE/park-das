@@ -1,8 +1,11 @@
 ﻿import os
 
 from telebot.async_telebot import AsyncTeleBot
+from telebot.asyncio_filters import StateFilter
 from telebot.asyncio_storage import StateMemoryStorage
+from telebot.states.asyncio.middleware import StateMiddleware
 from telebot import types, formatting
+# necessary for state parameter in handlers.
 
 import i18n
 
@@ -23,6 +26,8 @@ class ParkBot:
         """
         Creates bot commands, does all initialization
         """
+        self.api.add_custom_filter(StateFilter(self.api))
+        self.api.setup_middleware(StateMiddleware(self.api))
         await self.api.delete_my_commands()
         for lang in i18n.get("available_locales"):
             await self.api.set_my_commands(
@@ -50,6 +55,10 @@ class ParkBot:
                     types.BotCommand(
                         "navigation",
                         i18n.t("commands.navigation", lang)
+                    ),
+                    types.BotCommand(
+                        "timer",
+                        i18n.t("commands.timer", lang)
                     )
                 ],
                 language_code=lang

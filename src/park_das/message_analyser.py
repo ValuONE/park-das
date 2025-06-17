@@ -2,6 +2,7 @@ import os
 
 from enum import Enum
 from datetime import datetime
+from dataclasses import dataclass
 
 import dateparser
 
@@ -18,7 +19,7 @@ _genai_client = genai.Client(
 
 class BotCommands(Enum):
     NAVIGATION = "Navigation"
-    TIMING = "Timing"
+    TIMER = "Timing"
     LIVE = "Live"
     OVERVIEW = "Overview"
     UNKNOWN = "Unknown"
@@ -32,7 +33,7 @@ class BotCommands(Enum):
                 return com
         return BotCommands.UNKNOWN
 
-class ParsedTimeAndLocation(BaseModel):
+class _ParsedTimeAndLocation(BaseModel):
     time_estimate : str | None = Field(
         description=(
             "The best time estimate as a string in ISO 8601 format,"
@@ -47,6 +48,11 @@ class ParsedTimeAndLocation(BaseModel):
         ),
         default=None
     )
+
+@dataclass
+class TimeLocation():
+    time : datetime | None = None
+    location : str | None = None
 
 async def parse_command(user_txt : str | None) -> BotCommands:
     if user_txt is None:
@@ -72,17 +78,17 @@ async def parse_command(user_txt : str | None) -> BotCommands:
         Here are a few examples prompts for each command:
 
         Navigation:
-            - "Show me where can I park."
+            - "How can I get to the next best parking spot?"
             - "Guide me to a good parking spot."
             - "Which options for parking do I have [in the inner city|on campus]?"
-        Timing:
+        Timer:
             - "I will be on campus in 15 min."
             - "Tomorrow morning I will be in Ulm around 9."
             - "I need a parking spot when I arrive in half an hour."
         Live:
             - "Where can I park nearby?"
             - "Is there a parking spot near O27?"
-            - "What is my best to park currently?"
+            - "Where is my best option to park currently?"
         Overview:
             - "How full are the parking spots currently?"
             - "Show me all options for parking on campus."
@@ -105,9 +111,9 @@ async def parse_command(user_txt : str | None) -> BotCommands:
 
     return BotCommands.parse(response.text)
 
-async def parse_time_location(user_txt : str | None) -> datetime | None:
+async def parse_time_location(user_txt : str | None) -> TimeLocation:
     if user_txt is None:
-        return None
+        return TimeLocation()
 
     command_conf = types.GenerateContentConfig(
         system_instruction=f"""
@@ -146,7 +152,7 @@ async def parse_time_location(user_txt : str | None) -> datetime | None:
             "None", "None"
         """,
         response_mime_type="application/json",
-        response_schema=ParsedTimeAndLocation,
+        response_schema=_ParsedTimeAndLocation,
         temperature=0
     )
 
@@ -156,17 +162,20 @@ async def parse_time_location(user_txt : str | None) -> datetime | None:
         config=command_conf
     )
 
-    parsed = ParsedTimeAndLocation.model_construct()
+    parsed = _ParsedTimeAndLocation.model_construct()
 
     try:
-        parsed = ParsedTimeAndLocation.model_validate_json(response.text)
+        parsed = _ParsedTimeAndLocation.model_validate_json(response.text)
     except ValidationError as e:
         raise ValueError("Gemini response empty or incorrect!") from e
 
     if parsed.time_estimate is not None:
-        return dateparser.parse(parsed.time_estimate, languages=i18n.get("available_locales"))
+        return TimeLocation(
+            dateparser.parse(parsed.time_estimate, languages=i18n.get("available_locales")),
+            None if parsed.location == "None" else parsed.location
+        )
     else:
-        return None
+        return TimeLocation()
 
 async def test():
     test_sentences = [
