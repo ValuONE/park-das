@@ -96,9 +96,13 @@ async def _voice_handler(message: types.Message):
         Path(wav_path).unlink(missing_ok=True)
 
     if not text:
-        await bot.api.send_message(
-            chat_id,
-            "Ich habe nichts verstanden 😕. Versuche es bitte noch einmal.")
+        user_lang = getattr(message.from_user, "language_code", "de")
+        fallback_msg = {
+            "de": "Ich habe nichts verstanden 😕. Versuche es bitte noch einmal.",
+            "en": "I didn't understand anything 😕. Please try again.",
+        }.get(user_lang[:2], "I didn't understand anything 😕. Please try again.")
+
+        await bot.api.send_message(chat_id, fallback_msg)
         return
 
     # Echo so the user knows what was transcribed
