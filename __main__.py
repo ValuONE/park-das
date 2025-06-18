@@ -1,8 +1,8 @@
 ﻿import asyncio
-import aioschedule
 
 import i18n
 
+from src.park_das.monkey_patch import aioschedule
 from src.park_das.scrapper import fetch_data
 from src.park_das.handlers import bot
 from src.park_das.constants import UserLanguage
