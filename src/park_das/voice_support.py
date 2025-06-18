@@ -1,7 +1,9 @@
 """
 support for the park-das Telegram bot.
 
-Converts incoming voice messages into text using Whisper and forwards them to the existing free_text_handler, so that the already implemented command logic for text messages is used unchanged.
+Converts incoming voice messages into text using Whisper and forwards
+them to the existing free_text_handler, so that the already
+implemented command logic for text messages is used unchanged.
 
 All previous keyword routing functions have been removed - this module only performs speech-to-text.
 """
@@ -94,7 +96,9 @@ async def _voice_handler(message: types.Message):
         Path(wav_path).unlink(missing_ok=True)
 
     if not text:
-        await bot.api.send_message(chat_id, "Ich habe nichts verstanden 😕. Versuche es bitte noch einmal.")
+        await bot.api.send_message(
+            chat_id,
+            "Ich habe nichts verstanden 😕. Versuche es bitte noch einmal.")
         return
 
     # Echo so the user knows what was transcribed

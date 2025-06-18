@@ -165,8 +165,8 @@ async def parse_time_location(user_txt : str | None) -> datetime | None:
 
     if parsed.time_estimate is not None:
         return dateparser.parse(parsed.time_estimate, languages=i18n.get("available_locales"))
-    else:
-        return None
+
+    return None
 
 async def test():
     test_sentences = [
