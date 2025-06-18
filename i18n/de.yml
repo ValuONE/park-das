@@ -6,12 +6,13 @@ de:
     overview: Zeigt alle Parkplätze und aktuelle Auslastung an.
     recommend: Standortabhängige Empfehlung zu nahen freien Parkplätzen mit Navigation.
     navigation: Zeigt freie Parkplätze auf Karte an, ermöglicht Navigation.
+    timer: Schickt eine Parkempfehlung zu einem angegebenem Zeitpunkt.
   strings:
     help_msg: Folgende Befehle sind verfügbar
     welcome_msg: 🤖 Willkommen bei ParkBot 🚘
     location_btn: 📍 Standort senden
     location_msg: Tippe auf „%{.location_btn}“, um deinen aktuelle Standort zu schicken.
-    recommended_space_msg: Der empfohlene Parkplatz ist
+    recommended_space_msg: "Der empfohlene Parkplatz ist:\n\n%{spot}"
     recommended_space_nav_msg: Navigation starten
     mapprovider_not_set: |
       ⚠️
@@ -24,6 +25,9 @@ de:
     command_unknown: |
       Leider konnte die Eingabe nicht erkannt werden.
       Bitte die Frage neu und anders formulieren.
+    time_unknown: 📅 Bitte eingeben, wann die Empfehlung gesendet werden soll ⏰
+    timer_set: "Empfehlung wird am %{date} um %{time} zugestellt!"
+    timer_location_set: "Empfehlung für %{loc} wird am %{date} um %{time} zugestellt!"
   settings:
     back: ◀️ Zurück
     undefined: Nicht gesetzt ❌

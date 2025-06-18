@@ -43,6 +43,15 @@ class CarPark:
         """
         return self.name.get_pos()
 
+    def almost_full(self) -> bool:
+        """
+        Determines if parking spot is basically full already
+
+        :return: Flag whether spot is almost full
+        """
+        ratio = self.free_spaces / self.total_spaces
+        return ratio < self._RATIO_CRITICAL
+
     def occupancy_level(self) -> str:
         """
         Get a visual representation of the current occupancy level

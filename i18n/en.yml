@@ -6,12 +6,13 @@ en:
     overview: View all parking spots and their occupancy level.
     recommend: Location-based recommendation of nearby free parking spots with navigation.
     navigation: View free parking spots on a map and navigate to them.
+    timer: Sends a parking recommendation at a specified point of time.
   strings:
     help_msg: The following commands are available
     welcome_msg: 🤖 Welcome to ParkBot 🚘
     location_btn: 📍 Send location
     location_msg: Tap on „%{.location_btn}“ to send your current location.
-    recommended_space_msg: The recommended parking spot is
+    recommended_space_msg: "The recommended parking spot is:\n\n%{spot}"
     recommended_space_nav_msg: Start navigation
     mapprovider_not_set: |
       ⚠️
@@ -24,6 +25,9 @@ en:
     command_unknown: |
       Unfortunately the input could not be recognized.
       Please formulate the question again and differently.
+    time_unknown: 📅 Please enter when the recommendation should be sent ⏰
+    timer_set: "Recommendation will be sent on the %{date} at %{time}!"
+    timer_location_set: "Recommendation for %{loc} will be sent on the %{date} at %{time}!"
   settings:
     back: ◀️ Back
     undefined: Not set ❌
