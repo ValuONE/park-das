@@ -1,7 +1,7 @@
 ﻿import asyncio
-import i18n
 import logging
 import sys
+import i18n
 
 from src.park_das.monkey_patch import aioschedule
 from src.park_das.scrapper import fetch_data
