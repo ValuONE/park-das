@@ -19,9 +19,12 @@ from pathlib import Path
 import whisper
 from telebot import formatting, types
 from telebot.async_telebot import AsyncTeleBot
+from telebot.states.sync import StateContext
 
 from .bot import bot
+from .constants import UserLanguage
 from .handlers import free_text_handler
+from .models import UserSettingsManager
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +67,7 @@ async def _ogg_to_wav(ogg_path: str) -> str:
 # Haupt‑Handler
 # ---------------------------------------------------------------------------
 
-async def _voice_handler(message: types.Message):
+async def _voice_handler(message: types.Message, state: StateContext):
     """Process incoming voice messages."""
 
     chat_id = message.chat.id
@@ -87,20 +90,44 @@ async def _voice_handler(message: types.Message):
     # Transcribe (blocking -> thread pool)
     loop = asyncio.get_running_loop()
     try:
-        result = await loop.run_in_executor(
-            None,
-            lambda: _whisper().transcribe(wav_path, language="de"),
-        )
+
+        async with UserSettingsManager(message.from_user) as settings:
+            user_language = (
+                settings.language.value.lower()
+                if hasattr(settings.language, "value")
+                else str(settings.language).lower()
+            )
+
+            if user_language == str(UserLanguage.UNDEFINED).lower():
+                user_language = getattr(message.from_user, "language_code", "de")[:2]
+
+            result = await loop.run_in_executor(
+                None,
+                lambda: _whisper().transcribe(wav_path, language=None)
+            )
+
+            detected_lang: str = result.get("language", "").lower()
+
+            if detected_lang in ("de", "en") and detected_lang != user_language:
+                async with UserSettingsManager(message.from_user) as sett:
+                    sett.language = UserLanguage(detected_lang)
+                    user_language = detected_lang
+
         text: str = result.get("text", "").strip()
     finally:
         Path(wav_path).unlink(missing_ok=True)
 
     if not text:
-        user_lang = getattr(message.from_user, "language_code", "de")
-        fallback_msg = {
-            "de": "Ich habe nichts verstanden 😕. Versuche es bitte noch einmal.",
-            "en": "I didn't understand anything 😕. Please try again.",
-        }.get(user_lang[:2], "I didn't understand anything 😕. Please try again.")
+        async with UserSettingsManager(message.from_user) as settings:
+            user_language = str(settings.language)
+
+            if user_language == str(UserLanguage.UNDEFINED):
+                user_language = getattr(message.from_user, "language_code", "de")[:2]
+
+            fallback_msg = {
+                "de": "Ich habe nichts verstanden 😕. Versuche es bitte noch einmal.",
+                "en": "I didn't understand anything 😕. Please try again.",
+            }.get(user_language, "I didn't understand anything 😕. Please try again.")
 
         await bot.api.send_message(chat_id, fallback_msg)
         return
@@ -113,7 +140,7 @@ async def _voice_handler(message: types.Message):
     )
 
     message.text = text
-    await free_text_handler(message)
+    await free_text_handler(message, state)
 
 def register_voice_handler(bot_instance: AsyncTeleBot | None = None):
     (bot_instance or bot).api.message_handler(content_types=["voice"])(_voice_handler)
