@@ -49,6 +49,10 @@ class ParkBot:
                         i18n.t("commands.overview", lang)
                     ),
                     types.BotCommand(
+                        "automatic",
+                        i18n.t("commands.automatic", lang)
+                    ),
+                    types.BotCommand(
                         "recommend",
                         i18n.t("commands.recommend", lang)
                     ),
@@ -79,7 +83,7 @@ class ParkBot:
         """
         return self._bot
 
-    async def update_inline_buttons(self, user : types.User | None, message : types.Message):
+    async def update_inline_buttons(self, user: types.User | None, message : types.Message):
         """
         Ensures only one set of inline buttons is present.
 
@@ -88,9 +92,30 @@ class ParkBot:
         """
         async with UserSettingsManager(user) as s:
             if s.inline_buttons is not None:
-                await self.api.delete_message(s.inline_buttons.chat_id,
-                                              s.inline_buttons.message_id)
-            s.inline_buttons = InlineButtons(message.chat.id, message.message_id)
+                await self.api.delete_message(
+                    s.inline_buttons.chat_id,
+                    s.inline_buttons.message_id
+                )
+            s.inline_buttons = InlineButtons(
+                message.chat.id,
+                message.message_id
+            )
+
+    async def update_reply_keyboard(self, chat_id: int):
+        """
+        Ensures reply keyboard is only available when necessary.
+
+        :param message: New message containing reply keyboard
+        """
+        sent = await self.api.send_message(
+            chat_id,
+            "Removing Keyboard",
+            reply_markup=types.ReplyKeyboardRemove()
+        )
+        await self.api.delete_message(
+            sent.chat.id,
+            sent.message_id
+        )
 
     async def help_message(self, user: types.User | None) -> str:
         """

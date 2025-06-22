@@ -1,6 +1,7 @@
 from math import sqrt, floor
 from json import loads
 
+from aiofiles import open as aiopen
 from aiohttp import request
 
 from telebot import types, util, formatting
@@ -119,6 +120,24 @@ async def settings_handler(message: types.Message):
                 await api.answer_callback_query(cb.id)
 
 
+@bot.api.message_handler(commands=["automatic"])
+async def automatic_handler(message: types.Message):
+    """
+    Handler for the /automatic command.
+    Sends a tutorial for how to activate the functionality.
+    """
+    async with UserSettingsManager(message.from_user) as s:
+        async with aiopen("assets/automatic_tutorial.png", "rb") as f:
+            await bot.api.send_photo(
+                message.chat.id,
+                await f.read(),
+                caption=i18n.t(
+                    "strings.automatic_tutorial",
+                    str(s.language)
+                )
+            )
+
+
 @bot.api.message_handler(commands=["recommend"])
 async def recommend_handler(message: types.Message):
     async with UserSettingsManager(message.from_user) as s:
@@ -170,11 +189,14 @@ async def location_handler(message: types.Message):
 
         # Determine the map provider to use for building URLs
         button = {
-            i18n.t('strings.recommended_space_nav_msg', str(s.language)):
+            i18n.t("strings.recommended_space_nav_msg", str(s.language)):
             build_routing_data(closest_park.get_pos(), s.map_provider)
         }
 
         markup = util.quick_markup(button, row_width=1)
+
+        # Remove reply keyboard
+        await bot.update_reply_keyboard(message.chat.id)
 
         async with bot as api:
             await bot.update_inline_buttons(
@@ -225,6 +247,10 @@ async def navigation_handler(message: types.Message):
                     reply_markup=util.quick_markup(
                         spot_btns,
                         row_width=floor(sqrt(len(parking_spots)))
+                    ),
+                    caption=i18n.t(
+                        "strings.navigation_msg",
+                        str(s.language)
                     )
                 )
 
@@ -335,6 +361,8 @@ async def free_text_handler(message: types.Message, state: StateContext):
             await recommend_handler(message)
         case BotCommands.OVERVIEW:
             await overview_handler(message)
+        case BotCommands.AUTOMATIC:
+            await automatic_handler(message)
         case _:
             async with UserSettingsManager(message.from_user) as s:
                 await bot.api.reply_to(

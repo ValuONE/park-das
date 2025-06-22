@@ -4,6 +4,7 @@ de:
     help: Listet alle verfügbaren Kommandos auf.
     settings: Alle Einstellungen anzeigen und anpassen.
     overview: Zeigt alle Parkplätze und aktuelle Auslastung an.
+    automatic: Ermöglicht automatische Parkempfehlung bei Ankunft.
     recommend: Standortabhängige Empfehlung zu nahen freien Parkplätzen mit Navigation.
     navigation: Zeigt freie Parkplätze auf Karte an, ermöglicht Navigation.
     timer: Schickt eine Parkempfehlung zu einem angegebenem Zeitpunkt.
@@ -28,6 +29,8 @@ de:
     time_unknown: 📅 Bitte eingeben, wann die Empfehlung gesendet werden soll ⏰
     timer_set: "Empfehlung wird am %{date} um %{time} zugestellt!"
     timer_location_set: "Empfehlung für %{loc} wird am %{date} um %{time} zugestellt!"
+    automatic_tutorial: Bitte Live Standort teilen um automatische Empfehlung zu erhalten!
+    navigation_msg: "Navigationslinks zu empfohlenen Parkplätzen:"
     voice:
       not_understood: "Es wurde kein Text erkannt 😕. Bitte erneut versuchen 🔄."
       echo_msg: "Erkannter Text 🎤:"

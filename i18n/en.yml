@@ -4,6 +4,7 @@ en:
     help: Lists all available commands.
     settings: View and edit available settings.
     overview: View all parking spots and their occupancy level.
+    automatic: Enables automatic parking recommendations on arrival.
     recommend: Location-based recommendation of nearby free parking spots with navigation.
     navigation: View free parking spots on a map and navigate to them.
     timer: Sends a parking recommendation at a specified point of time.
@@ -28,6 +29,8 @@ en:
     time_unknown: 📅 Please enter when the recommendation should be sent ⏰
     timer_set: "Recommendation will be sent on the %{date} at %{time}!"
     timer_location_set: "Recommendation for %{loc} will be sent on the %{date} at %{time}!"
+    automatic_tutorial: Please enable live location sharing to recieve automatic recommendations!
+    navigation_msg: "Navigation links to recommended parking spots:"
     voice:
       not_understood: "No text could be recognized 😕. Please try again 🔄."
       echo_msg: "Recognized text 🎤:"
