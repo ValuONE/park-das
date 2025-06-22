@@ -131,7 +131,7 @@ async def patched_edit_message_text(
 
     try:
         await self.delete_message(chat_id, message_id)
-    except Exception:
+    except Exception: # pylint: disable=broad-exception-caught
         pass
 
     return sent
