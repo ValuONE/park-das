@@ -8,7 +8,7 @@ from telebot.types import Location, User, InlineKeyboardMarkup
 
 import i18n
 
-from .constants import CarParkNames, UserLanguage, UserType, MapProvider
+from .constants import CarParkNames, UserLanguage, UserType, MapProvider, OutputType
 
 
 @dataclass
@@ -114,6 +114,7 @@ class UserSettings:
     language: UserLanguage = UserLanguage.UNDEFINED
     map_provider: MapProvider = MapProvider.UNDEFINED
     user_type: UserType = UserType.UNDEFINED
+    output_type: OutputType = OutputType.TEXT
     last_location: Optional[Location] = None
     inline_buttons: Optional[InlineButtons] = None
 
@@ -122,14 +123,18 @@ class UserSettings:
         return "\n".join(
             [
                 i18n.t("settings.options.language_curr",
-                       locale=lang,
-                       curr=i18n.t(repr(self.language), lang)),
+                        locale=lang,
+                        curr=i18n.t(repr(self.language), lang)),
                 i18n.t("settings.options.mapprovider_curr",
-                       locale=lang,
-                       curr=i18n.t(repr(self.map_provider), lang)),
+                        locale=lang,
+                        curr=i18n.t(repr(self.map_provider), lang)),
                 i18n.t("settings.options.usertype_curr",
-                       locale=lang,
-                       curr=i18n.t(repr(self.user_type), lang))
+                        locale=lang,
+                        curr=i18n.t(repr(self.user_type), lang)),
+                i18n.t("settings.options.outputtype_curr",
+                        locale=lang,
+                        curr=i18n.t(repr(self.output_type), lang)
+                       )
             ]
         )
 
@@ -144,7 +149,8 @@ class UserSettings:
             {
                 i18n.t("settings.options.language", lang): {"callback_data" : "user_language"},
                 i18n.t("settings.options.mapprovider", lang): {"callback_data" : "map_provider"},
-                i18n.t("settings.options.usertype", lang): {"callback_data" : "user_type"}
+                i18n.t("settings.options.usertype", lang): {"callback_data" : "user_type"},
+                i18n.t("settings.options.outputtype", lang): {"callback_data" : "output_type"}
             },
             row_width=1
         )
@@ -181,6 +187,7 @@ class UserSettingsManager:
                     language TEXT NOT NULL,
                     map_provider TEXT NOT NULL,
                     user_type TEXT NOT NULL,
+                    output_type TEXT NOT NULL,
                     longitude REAL,
                     latitude REAL,
                     chat_id INTEGER,
@@ -191,7 +198,7 @@ class UserSettingsManager:
 
             async with con.execute(
                 """
-                SELECT language, map_provider, user_type, longitude, latitude, chat_id, message_id
+                SELECT language, map_provider, user_type, output_type, longitude, latitude, chat_id, message_id
                 FROM settings
                 WHERE user_id = ?
                 """,
@@ -204,10 +211,11 @@ class UserSettingsManager:
                     language=UserLanguage(result[0]),
                     map_provider=MapProvider(result[1]),
                     user_type=UserType(result[2]),
-                    last_location=Location(result[3], result[4])
-                        if result[3] is not None else None,
-                    inline_buttons=InlineButtons(result[5], result[6])
-                        if result[5] is not None else None
+                    output_type=OutputType(result[3]),
+                    last_location=Location(result[4], result[5])
+                        if result[4] is not None else None,
+                    inline_buttons=InlineButtons(result[6], result[7])
+                        if result[6] is not None else None
                 ) if result is not None else UserSettings()
 
     async def __aenter__(self) -> UserSettings:
@@ -229,15 +237,16 @@ class UserSettingsManager:
             await con.execute(
                 """
                 INSERT OR REPLACE INTO settings
-                (user_id, language, map_provider, user_type,
+                (user_id, language, map_provider, user_type, output_type,
                 longitude, latitude, chat_id, message_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     self._user.id,
                     settings.language.value,
                     settings.map_provider.value,
                     settings.user_type.value,
+                    settings.output_type.value,
                     settings.last_location.longitude if settings.last_location else None,
                     settings.last_location.latitude if settings.last_location else None,
                     settings.inline_buttons.chat_id if settings.inline_buttons else None,
