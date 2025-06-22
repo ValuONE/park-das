@@ -126,6 +126,7 @@ class RecommendationTimer:
     def with_location(self) -> bool:
         return self.loc is not None
 
+# pylint: disable=too-many-instance-attributes
 @dataclass
 class UserSettings:
     language: UserLanguage = UserLanguage.UNDEFINED
@@ -136,6 +137,7 @@ class UserSettings:
     auto_alert: BotMessage = BotMessage()
     alert_set: bool = False
     timer: RecommendationTimer = RecommendationTimer()
+# pylint: enable=too-many-instance-attributes
 
     def __str__(self) -> str:
         lang = str(self.language)
@@ -216,10 +218,19 @@ class UserSettingsManager:
 
             async with con.execute(
                 """
-                SELECT language, map_provider, user_type, bot_state,
-                       inline_chat_id, inline_message_id,
-                       auto_alert_chat_id, auto_alert_message_id, alert_set,
-                       timer_time, timer_date, timer_loc
+                SELECT
+                    language,
+                    map_provider,
+                    user_type,
+                    bot_state,
+                    inline_chat_id,
+                    inline_message_id,
+                    auto_alert_chat_id,
+                    auto_alert_message_id,
+                    alert_set,
+                    timer_time,
+                    timer_date,
+                    timer_loc
                 FROM settings
                 WHERE user_id = ?
                 """,
@@ -256,9 +267,20 @@ class UserSettingsManager:
             settings: UserSettings = self._refs[self._user.id]
             await con.execute(
                 """
-                INSERT OR REPLACE INTO settings
-                (user_id, language, map_provider, user_type, bot_state, inline_chat_id, inline_message_id, auto_alert_chat_id, auto_alert_message_id, alert_set, timer_time, timer_date, timer_loc)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT OR REPLACE INTO settings (
+                    user_id,
+                    language,
+                    map_provider,
+                    user_type, bot_state,
+                    inline_chat_id,
+                    inline_message_id,
+                    auto_alert_chat_id,
+                    auto_alert_message_id,
+                    alert_set,
+                    timer_time,
+                    timer_date,
+                    timer_loc
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     self._user.id,
