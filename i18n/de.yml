@@ -20,19 +20,30 @@ de:
 
       Bitte erst einen Kartenanbieter mit
       /settings auswählen!
-    overview_campus: 🎓 Universitätsparkplätze
-    overview_city: 🏙️ Stadtparkplätze
+    overview_campus: "🎓 Universitätsparkplätze:\n\n"
+    overview_city: "🏙️ Stadtparkplätze:\n\n"
     overview_msg: "%{name} : %{free} frei | %{occupancy}\n"
     command_unknown: |
-      Leider konnte die Eingabe nicht erkannt werden.
-      Bitte die Frage neu und anders formulieren.
-    time_unknown: 📅 Bitte eingeben, wann die Empfehlung gesendet werden soll ⏰
-    timer_set: "Empfehlung wird am %{date} um %{time} zugestellt!"
-    timer_location_set: "Empfehlung für %{loc} wird am %{date} um %{time} zugestellt!"
+      Eingabe wurde nicht als Befehl erkannt 🚫.
+      Bitte einen neuen Befehl eingeben 📝.
+    time_unknown: 📅 Wann und soll die Empfehlung gesendet werden? ⏰
+    timer_cancel: Empfehlung wurde gelöscht 🗑️!
+    timer_set: "Empfehlung wird am 📅 %{date} um ⏰ %{time} zugestellt!"
+    timer_loc_set: "Empfehlung für 📍 %{loc} wird am 📅 %{date} um ⏰ %{time} zugestellt!"
+    timer_set_cancel: Empfehlung wurde nicht gesetzt!
+    timer_set_already: |
+      ℹ️ Empfehlung ist bereits für ⏰ %{time} am 📅 %{date} eingestellt!
+      🔄 Wie soll die Empfehlung abgeändert werden?
+    timer_loc_set_already: |
+      ℹ️ Empfehlung für 📍 %{loc} ist bereits für ⏰ %{time} am 📅 %{date} eingestellt!
+      🔄 Wie soll die Empfehlung abgeändert werden?
+    timer_set_already_cancel: Empfehlung wurde nicht abgeändert!
     automatic_tutorial: Bitte Live Standort teilen um automatische Empfehlung zu erhalten!
+    automatic_triggered: Willkommen am Campus 🎓!
     navigation_msg: "Navigationslinks zu empfohlenen Parkplätzen:"
     voice:
-      not_understood: "Es wurde kein Text erkannt 😕. Bitte erneut versuchen 🔄."
+      processing: ⏳ Nachricht wird verarbeitet ⌛️
+      not_understood: Es wurde kein Text erkannt 😕. Bitte erneut versuchen 🔄.
       echo_msg: "Erkannter Text 🎤:"
   settings:
     back: ◀️ Zurück

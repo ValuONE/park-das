@@ -1,5 +1,4 @@
 ﻿from dataclasses import dataclass
-from typing import Optional
 
 import aiosqlite
 
@@ -8,14 +7,7 @@ from telebot.types import Location, User, InlineKeyboardMarkup
 
 import i18n
 
-from .constants import CarParkNames, UserLanguage, UserType, MapProvider
-
-
-@dataclass
-class InlineButtons:
-    chat_id: int
-    message_id: int
-
+from .constants import CarParkNames, UserLanguage, UserType, MapProvider, InteractionStates
 
 @dataclass
 class CarPark:
@@ -109,13 +101,41 @@ class CarPark:
             f"{loc.latitude},{loc.longitude}"
         )
 
+
+@dataclass
+class BotMessage:
+    chat_id : int | None = None
+    message_id : int | None = None
+
+    @property
+    def exists(self) -> bool:
+        return self.chat_id is not None and self.message_id is not None
+
+
+@dataclass
+class RecommendationTimer:
+    time: str | None = None
+    date: str | None = None
+    loc: str | None = None
+
+    @property
+    def exists(self) -> bool:
+        return self.time is not None and self.date is not None
+
+    @property
+    def with_location(self) -> bool:
+        return self.loc is not None
+
 @dataclass
 class UserSettings:
     language: UserLanguage = UserLanguage.UNDEFINED
     map_provider: MapProvider = MapProvider.UNDEFINED
     user_type: UserType = UserType.UNDEFINED
-    last_location: Optional[Location] = None
-    inline_buttons: Optional[InlineButtons] = None
+    bot_state: InteractionStates = InteractionStates.IDLE
+    inline_buttons: BotMessage = BotMessage()
+    auto_alert: BotMessage = BotMessage()
+    alert_set: bool = False
+    timer: RecommendationTimer = RecommendationTimer()
 
     def __str__(self) -> str:
         lang = str(self.language)
@@ -181,17 +201,25 @@ class UserSettingsManager:
                     language TEXT NOT NULL,
                     map_provider TEXT NOT NULL,
                     user_type TEXT NOT NULL,
-                    longitude REAL,
-                    latitude REAL,
-                    chat_id INTEGER,
-                    message_id INTEGER
+                    bot_state INTEGER NOT NULL,
+                    inline_chat_id INTEGER,
+                    inline_message_id INTEGER,
+                    auto_alert_chat_id INTEGER,
+                    auto_alert_message_id INTEGER,
+                    alert_set INTEGER,
+                    timer_time TEXT,
+                    timer_date TEXT,
+                    timer_loc TEXT
                 )
                 """
             )
 
             async with con.execute(
                 """
-                SELECT language, map_provider, user_type, longitude, latitude, chat_id, message_id
+                SELECT language, map_provider, user_type, bot_state,
+                       inline_chat_id, inline_message_id,
+                       auto_alert_chat_id, auto_alert_message_id, alert_set,
+                       timer_time, timer_date, timer_loc
                 FROM settings
                 WHERE user_id = ?
                 """,
@@ -204,16 +232,16 @@ class UserSettingsManager:
                     language=UserLanguage(result[0]),
                     map_provider=MapProvider(result[1]),
                     user_type=UserType(result[2]),
-                    last_location=Location(result[3], result[4])
-                        if result[3] is not None else None,
-                    inline_buttons=InlineButtons(result[5], result[6])
-                        if result[5] is not None else None
+                    bot_state=InteractionStates(result[3]),
+                    inline_buttons=BotMessage(result[4], result[5]),
+                    auto_alert=BotMessage(result[6], result[7]),
+                    alert_set=bool(result[8]),
+                    timer=RecommendationTimer(result[9], result[10], result[11])
                 ) if result is not None else UserSettings()
 
     async def __aenter__(self) -> UserSettings:
         if self._user is None:
             return UserSettings()
-
 
         if self._user.id not in self._refs:
             self._refs[self._user.id] = await self._load_settings()
@@ -225,23 +253,27 @@ class UserSettingsManager:
             return False
 
         async with aiosqlite.connect(UserSettingsManager.DB_PATH) as con:
-            settings = self._refs[self._user.id]
+            settings: UserSettings = self._refs[self._user.id]
             await con.execute(
                 """
                 INSERT OR REPLACE INTO settings
-                (user_id, language, map_provider, user_type,
-                longitude, latitude, chat_id, message_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                (user_id, language, map_provider, user_type, bot_state, inline_chat_id, inline_message_id, auto_alert_chat_id, auto_alert_message_id, alert_set, timer_time, timer_date, timer_loc)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     self._user.id,
                     settings.language.value,
                     settings.map_provider.value,
                     settings.user_type.value,
-                    settings.last_location.longitude if settings.last_location else None,
-                    settings.last_location.latitude if settings.last_location else None,
-                    settings.inline_buttons.chat_id if settings.inline_buttons else None,
-                    settings.inline_buttons.message_id if settings.inline_buttons else None
+                    settings.bot_state.value,
+                    settings.inline_buttons.chat_id,
+                    settings.inline_buttons.message_id,
+                    settings.auto_alert.chat_id,
+                    settings.auto_alert.message_id,
+                    int(settings.alert_set),
+                    settings.timer.time,
+                    settings.timer.date,
+                    settings.timer.loc
                 )
             )
             await con.commit()

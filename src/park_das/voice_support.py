@@ -8,14 +8,15 @@ implemented command logic for text messages is used unchanged.
 All previous keyword routing functions have been removed - this module only performs speech-to-text.
 """
 
+import os
 import asyncio
 import logging
-import os
 import tempfile
 
 from pathlib import Path
 
 import whisper
+
 from telebot import types
 
 from .bot import bot
@@ -85,9 +86,12 @@ async def transcripe(message: types.Message) -> str | None:
     try:
         result = await loop.run_in_executor(
             None,
-            lambda: _whisper().transcribe(wav_path, language=None)
+            lambda: _whisper().transcribe(
+                wav_path,
+                language=None,
+                fp16=False
+            )
         )
-        print(result)
         return result.get("text", "").strip()
 
     except Exception: # pylint: disable=broad-exception-caught
