@@ -28,6 +28,9 @@ en:
     time_unknown: 📅 Please enter when the recommendation should be sent ⏰
     timer_set: "Recommendation will be sent on the %{date} at %{time}!"
     timer_location_set: "Recommendation for %{loc} will be sent on the %{date} at %{time}!"
+    voice:
+      not_understood: "No text could be recognized 😕. Please try again 🔄."
+      echo_msg: "Recognized text 🎤:"
   settings:
     back: ◀️ Back
     undefined: Not set ❌
@@ -48,5 +51,3 @@ en:
     language:
       de: German 🇩🇪
       en: English 🇺🇸
-  voice:
-    not_understood: "I didn't understand anything 😕. Please try again."

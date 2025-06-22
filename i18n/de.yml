@@ -28,6 +28,9 @@ de:
     time_unknown: 📅 Bitte eingeben, wann die Empfehlung gesendet werden soll ⏰
     timer_set: "Empfehlung wird am %{date} um %{time} zugestellt!"
     timer_location_set: "Empfehlung für %{loc} wird am %{date} um %{time} zugestellt!"
+    voice:
+      not_understood: "Es wurde kein Text erkannt 😕. Bitte erneut versuchen 🔄."
+      echo_msg: "Erkannter Text 🎤:"
   settings:
     back: ◀️ Zurück
     undefined: Nicht gesetzt ❌
@@ -48,5 +51,3 @@ de:
     language:
       de: Deutsch 🇩🇪
       en: Englisch 🇺🇸
-  voice:
-    not_understood: "Ich habe nichts verstanden 😕. Versuche es bitte noch einmal."

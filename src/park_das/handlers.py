@@ -15,6 +15,7 @@ from .models import UserSettingsManager, UserSettings
 from .constants import MapProvider, UserType, UserLanguage
 from .util import haversine_distance, build_routing_data, static_map
 from .message_analyser import parse_command, BotCommands, parse_time_location
+from .voice_support import transcripe
 
 from .bot import bot
 
@@ -344,3 +345,26 @@ async def free_text_handler(message: types.Message, state: StateContext):
                     ),
                     parse_mode="Markdown"
                 )
+
+@bot.api.message_handler(content_types=["voice"])
+async def voice_input_handler(message: types.Message, state: StateContext):
+    """
+    Wrapper handler for voice input being recieved as voice message
+    """
+    async with UserSettingsManager(message.from_user) as s:
+        recieved_text = await transcripe(message)
+        message.text = recieved_text
+
+        # Echo so the user knows what was transcribed
+        await bot.api.reply_to(
+            message,
+            i18n.t("strings.voice.not_understood", str(s.language)) if
+            recieved_text is None else
+            formatting.format_text(
+                i18n.t("strings.voice.echo_msg", str(s.language)),
+                formatting.mbold(recieved_text)
+            ),
+            parse_mode="Markdown",
+        )
+
+        await free_text_handler(message, state)
