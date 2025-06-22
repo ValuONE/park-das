@@ -126,7 +126,6 @@ class RecommendationTimer:
     def with_location(self) -> bool:
         return self.loc is not None
 
-# pylint: disable=too-many-instance-attributes
 @dataclass
 class UserSettings:
     language: UserLanguage = UserLanguage.UNDEFINED
@@ -137,7 +136,6 @@ class UserSettings:
     auto_alert: BotMessage = BotMessage()
     alert_set: bool = False
     timer: RecommendationTimer = RecommendationTimer()
-# pylint: enable=too-many-instance-attributes
 
     def __str__(self) -> str:
         lang = str(self.language)
