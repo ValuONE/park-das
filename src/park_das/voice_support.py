@@ -14,6 +14,7 @@ import asyncio
 import logging
 import os
 import tempfile
+
 from pathlib import Path
 
 import whisper
@@ -21,8 +22,9 @@ from telebot import formatting, types
 from telebot.async_telebot import AsyncTeleBot
 from telebot.states.sync import StateContext
 
+import i18n
+
 from .bot import bot
-from .constants import UserLanguage
 from .handlers import free_text_handler
 from .models import UserSettingsManager
 
@@ -90,46 +92,26 @@ async def _voice_handler(message: types.Message, state: StateContext):
     # Transcribe (blocking -> thread pool)
     loop = asyncio.get_running_loop()
     try:
-
         async with UserSettingsManager(message.from_user) as settings:
-            user_language = (
-                settings.language.value.lower()
-                if hasattr(settings.language, "value")
-                else str(settings.language).lower()
-            )
+            try:
+                result = await loop.run_in_executor(
+                    None,
+                    lambda: _whisper().transcribe(wav_path, language=None)
+                )
+                text: str = result.get("text", "").strip()
 
-            if user_language == str(UserLanguage.UNDEFINED).lower():
-                user_language = getattr(message.from_user, "language_code", "de")[:2]
-
-            result = await loop.run_in_executor(
-                None,
-                lambda: _whisper().transcribe(wav_path, language=None)
-            )
-
-            detected_lang: str = result.get("language", "").lower()
-
-            if detected_lang in ("de", "en") and detected_lang != user_language:
-                async with UserSettingsManager(message.from_user) as sett:
-                    sett.language = UserLanguage(detected_lang)
-                    user_language = detected_lang
-
-        text: str = result.get("text", "").strip()
+            except Exception: # pylint: disable=broad-exception-caught
+                logger.exception("Transcription failed")
+                text = ""
     finally:
         Path(wav_path).unlink(missing_ok=True)
 
+
     if not text:
-        async with UserSettingsManager(message.from_user) as settings:
-            user_language = str(settings.language)
-
-            if user_language == str(UserLanguage.UNDEFINED):
-                user_language = getattr(message.from_user, "language_code", "de")[:2]
-
-            fallback_msg = {
-                "de": "Ich habe nichts verstanden 😕. Versuche es bitte noch einmal.",
-                "en": "I didn't understand anything 😕. Please try again.",
-            }.get(user_language, "I didn't understand anything 😕. Please try again.")
-
-        await bot.api.send_message(chat_id, fallback_msg)
+        await bot.api.send_message(
+            chat_id,
+            i18n.t("voice.not_understood", str(settings.language))
+        )
         return
 
     # Echo so the user knows what was transcribed

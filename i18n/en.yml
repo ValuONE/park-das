@@ -48,3 +48,5 @@ en:
     language:
       de: German 🇩🇪
       en: English 🇺🇸
+  voice:
+    not_understood: "I didn't understand anything 😕. Please try again."
