@@ -1,19 +1,22 @@
 from __future__ import annotations
-import asyncio, os, tempfile
+import asyncio
+import os
+import tempfile
 import aiosqlite
-from gtts import gTTS                      # pip install gTTS
+from gtts import gTTS
 from telebot.async_telebot import AsyncTeleBot
 from telebot import types
 from .constants import OutputType
 
 
-# ---------- kleine Hilfsfunktionen -----------------------------------------
 def _iso_lang(db_value: str | None) -> str:
     # "settings.language.de" -> "de"
     return (db_value or "en").rsplit(".", 1)[-1]
 
 async def _pref(chat_id: int) -> tuple[bool, str]:
-    """suche Sprache & Output-Modus des Users im DB-Table settings"""
+    """
+    Selects the output type and language for a given chat ID.
+    """
     async with aiosqlite.connect("settings.db") as con:
         async with con.execute(
             "SELECT output_type, language FROM settings WHERE user_id = ?",
@@ -25,31 +28,33 @@ async def _pref(chat_id: int) -> tuple[bool, str]:
             return row[0] == repr(OutputType.VOICE), _iso_lang(row[1])
 
 async def _tts(text: str, lang: str) -> str:
-    """Text->Speech → speichere temporäre MP3 und liefere Pfad zurück"""
-    fd, path = tempfile.mkstemp(suffix=".mp3"); os.close(fd)
+    """
+    Text->Speech using gTTS and returns the path to the saved MP3 file.
+    """
+    fd, path = tempfile.mkstemp(suffix=".mp3")
+    os.close(fd)
     await asyncio.get_running_loop().run_in_executor(
         None, lambda: gTTS(text, lang=lang).save(path)
     )
     return path
 
-
-# ---------- Monkey-Patches ---------------------------------------------------
 _original_send_message = AsyncTeleBot.send_message
 _original_reply_to    = AsyncTeleBot.reply_to
 
 async def _send_voice(self: AsyncTeleBot, chat_id: int, text: str, **kw):
     use_voice, lang = await _pref(chat_id)
-    if not use_voice:                               # ➜ normaler Text
+    if not use_voice:
         return await _original_send_message(self, chat_id, text, **kw)
 
     path = await _tts(text, lang)
     try:
-        # Parse-Mode ignorieren – Markdown in Voice-Captions ist unzuverlässig
         kw.pop("parse_mode", None)
         res = await self.send_voice(chat_id, open(path, "rb"), caption=text, **kw)
     finally:
-        try: os.remove(path)
-        except OSError: pass
+        try:
+            os.remove(path)
+        except OSError:
+            pass
     return res
 
 async def patched_send_message(self, chat_id, text, *a, **kw):  # type: ignore

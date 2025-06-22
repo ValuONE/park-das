@@ -198,7 +198,15 @@ class UserSettingsManager:
 
             async with con.execute(
                 """
-                SELECT language, map_provider, user_type, output_type, longitude, latitude, chat_id, message_id
+                SELECT 
+                    language, 
+                    map_provider, 
+                    user_type, 
+                    output_type, 
+                    longitude, 
+                    latitude, 
+                    chat_id, 
+                    message_id
                 FROM settings
                 WHERE user_id = ?
                 """,
