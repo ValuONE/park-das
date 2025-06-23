@@ -127,6 +127,7 @@ class RecommendationTimer:
     def with_location(self) -> bool:
         return self.loc is not None
 
+
 @dataclass
 class UserSettings:
     language: UserLanguage = UserLanguage.UNDEFINED
@@ -202,18 +203,23 @@ class UserSettingsManager:
     _instance = None
     _refs = {}
 
-    def __new__(cls, user: User | None = None):
+    def __new__(cls, user: User | int | None = None):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, user : User | None):
+    def __init__(self, user : User | int | None):
         """
         Opens database to access user information
 
         :param user: Telegram user to access
         """
-        self._user = user
+        if isinstance(user, User):
+            self._user = user.id
+        elif isinstance(user, int):
+            self._user = user
+        else:
+            self._user = None
 
     async def _load_settings(self) -> UserSettings:
         if self._user is None:
@@ -261,7 +267,7 @@ class UserSettingsManager:
                 WHERE user_id = ?
                 """,
                 (
-                    self._user.id,
+                    self._user,
                 )
             ) as cursor:
                 result = await cursor.fetchone()
@@ -281,17 +287,17 @@ class UserSettingsManager:
         if self._user is None:
             return UserSettings()
 
-        if self._user.id not in self._refs:
-            self._refs[self._user.id] = await self._load_settings()
+        if self._user not in self._refs:
+            self._refs[self._user] = await self._load_settings()
 
-        return self._refs[self._user.id]
+        return self._refs[self._user]
 
     async def __aexit__(self, exc_type, exc_value, traceback) -> bool:
         if self._user is None:
             return False
 
         async with aiosqlite.connect(UserSettingsManager.DB_PATH) as con:
-            settings: UserSettings = self._refs[self._user.id]
+            settings: UserSettings = self._refs[self._user]
             await con.execute(
                 """
                 INSERT OR REPLACE INTO settings (
@@ -312,7 +318,7 @@ class UserSettingsManager:
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
-                    self._user.id,
+                    self._user,
                     settings.language.value,
                     settings.map_provider.value,
                     settings.user_type.value,

@@ -2,7 +2,6 @@
 
 from telebot.async_telebot import AsyncTeleBot
 from telebot import types, formatting
-from telebot.apihelper import ApiException
 
 import i18n
 
@@ -77,7 +76,7 @@ class ParkBot:
         """
         return self._bot
 
-    async def update_inline_buttons(self, user: types.User | None, sent: types.Message):
+    async def update_inline_buttons(self, user: types.User | int | None, sent: types.Message):
         """
         Ensures only one set of inline buttons is present.
 
@@ -91,7 +90,7 @@ class ParkBot:
                         s.inline_buttons.chat_id, # type: ignore
                         s.inline_buttons.message_id # type: ignore
                     )
-                except ApiException:
+                except Exception: # pylint: disable=broad-exception-caught
                     pass
             s.inline_buttons = BotMessage(
                 sent.chat.id,
@@ -116,7 +115,7 @@ class ParkBot:
 
     async def update_bot_location(
         self,
-        user: types.User | None,
+        user: types.User | int | None,
         location: types.Location | None,
         chat_id: int
     ):
@@ -139,7 +138,7 @@ class ParkBot:
                             live_period=location.live_period,
                             proximity_alert_radius=location.proximity_alert_radius
                         )
-                    except ApiException:
+                    except Exception: # pylint: disable=broad-exception-caught
                         sent = await self.api.send_location(
                             chat_id,
                             location.latitude,
@@ -167,7 +166,7 @@ class ParkBot:
                         s.auto_alert.chat_id,
                         s.auto_alert.message_id
                     )
-                except ApiException:
+                except Exception: # pylint: disable=broad-exception-caught
                     pass
                 finally:
                     s.auto_alert = BotMessage()
