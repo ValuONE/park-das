@@ -10,6 +10,7 @@ from telebot import types
 
 from .constants import OutputType
 from .models import UserSettingsManager
+
 from .bot import bot
 
 
@@ -118,8 +119,7 @@ async def patched_edit_message_text(
 
     try:
         if has_buttons:
-            async with bot as api:
-                await bot.update_inline_buttons(chat_id, sent)
+            await bot.update_inline_buttons(chat_id, sent)
         else:
             await self.delete_message(chat_id, message_id)
     except Exception: # pylint: disable=broad-exception-caught
