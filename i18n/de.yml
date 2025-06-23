@@ -12,7 +12,7 @@ de:
     help_msg: Folgende Befehle sind verfügbar
     welcome_msg: 🤖 Willkommen bei ParkBot 🚘
     location_btn: 📍 Standort senden
-    location_msg: Tippe auf „%{.location_btn}“, um deinen aktuelle Standort zu schicken.
+    location_msg: Tippe auf „%{.location_btn}“, um deinen aktuellen Standort zu schicken.
     recommended_space_msg: "Der empfohlene Parkplatz ist:\n\n%{spot}"
     recommended_space_nav_msg: Navigation starten
     mapprovider_not_set: |
@@ -55,10 +55,15 @@ de:
       mapprovider_curr: "Gewählter %{.mapprovider}:\t\t%{curr}"
       usertype: Nutzertyp
       usertype_curr: "Ihr %{.usertype}:\t\t%{curr}"
+      outputtype: Ausgabeformat
+      outputtype_curr: "Gewähltes %{.outputtype}:\t\t%{curr}"
     usertype:
       visitor: Besucher 🙋
       student: Mitarbeiter 🧑‍🔬
       city: Innenstadt 🏙️
+    outputtype:
+        text: Text 📝
+        voice: Sprachausgabe 🔊
     mapprovider:
       apple: Apple 🍎
       google: Google 🤖

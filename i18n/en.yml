@@ -55,10 +55,15 @@ en:
       mapprovider_curr: "Selected %{.mapprovider}:\t\t%{curr}"
       usertype: User type
       usertype_curr: "Your %{.usertype}:\t\t%{curr}"
+      outputtype: Output type
+      outputtype_curr: "Your %{.outputtype}:\t\t%{curr}"
     usertype:
       visitor: Visitor 🙋
       student: Employee 🧑‍🔬
       city: Inner city 🏙️
+    outputtype:
+      text: Text 📝
+      voice: Voice output 🔊
     mapprovider:
       apple: Apple 🍎
       google: Google 🤖

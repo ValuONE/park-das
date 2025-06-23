@@ -145,6 +145,11 @@ class UserType(SettingsEnum):
     CITY = "settings.usertype.city"
     UNDEFINED = "settings.undefined"
 
+class OutputType(SettingsEnum):
+    TEXT = "settings.outputtype.text"
+    VOICE = "settings.outputtype.voice"
+    UNDEFINED = "settings.undefined"
+
 class InteractionStates(Enum):
     IDLE = auto()
     NEED_DATE_TIME = auto()

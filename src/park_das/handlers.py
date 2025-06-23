@@ -11,7 +11,7 @@ import i18n
 
 from .scrapper import get_data
 from .models import UserSettingsManager, UserSettings, RecommendationTimer
-from .constants import MapProvider, UserType, UserLanguage, InteractionStates
+from .constants import MapProvider, UserType, UserLanguage, OutputType, InteractionStates
 from .util import haversine_distance, build_routing_data, static_map
 from .message_analyser import parse_command, BotCommands, parse_time_location
 from .voice_support import transcripe
@@ -30,6 +30,7 @@ async def start_handler(message: types.Message):
             if s.user_type == UserType.UNDEFINED:
                 s.language = UserLanguage.DE
                 s.user_type = UserType.VISITOR
+                s.output_type = OutputType.TEXT
 
             # Reset everything
             s.bot_state = InteractionStates.IDLE
@@ -105,6 +106,12 @@ async def settings_handler(message: types.Message):
                             sent.message_id,
                             reply_markup=UserType.markup_buttons(lang)
                         )
+                    case "output_type":
+                        await api.edit_message_reply_markup(
+                            sent.chat.id,
+                            sent.message_id,
+                            reply_markup=OutputType.markup_buttons(lang)
+                        )
                     case "back":
                         await api.edit_message_reply_markup(
                             sent.chat.id,
@@ -119,6 +126,8 @@ async def settings_handler(message: types.Message):
                             MapProvider.__name__ in update else s.map_provider
                         s.user_type = UserType(update[UserType.__name__]) if \
                             UserType.__name__ in update else s.user_type
+                        s.output_type = OutputType(update[OutputType.__name__]) if \
+                            OutputType.__name__ in update else s.output_type
                         lang = str(s.language)
 
                         await api.edit_message_text(

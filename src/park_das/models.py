@@ -7,7 +7,8 @@ from telebot.types import Location, User, InlineKeyboardMarkup
 
 import i18n
 
-from .constants import CarParkNames, UserLanguage, UserType, MapProvider, InteractionStates
+from .constants import  CarParkNames, UserLanguage, UserType,\
+                        MapProvider, OutputType, InteractionStates
 
 @dataclass
 class CarPark:
@@ -131,6 +132,7 @@ class UserSettings:
     language: UserLanguage = UserLanguage.UNDEFINED
     map_provider: MapProvider = MapProvider.UNDEFINED
     user_type: UserType = UserType.UNDEFINED
+    output_type: OutputType = OutputType.UNDEFINED
     bot_state: InteractionStates = InteractionStates.IDLE
     inline_buttons: BotMessage = BotMessage()
     auto_alert: BotMessage = BotMessage()
@@ -141,15 +143,38 @@ class UserSettings:
         lang = str(self.language)
         return "\n".join(
             [
-                i18n.t("settings.options.language_curr",
-                       locale=lang,
-                       curr=i18n.t(repr(self.language), lang)),
-                i18n.t("settings.options.mapprovider_curr",
-                       locale=lang,
-                       curr=i18n.t(repr(self.map_provider), lang)),
-                i18n.t("settings.options.usertype_curr",
-                       locale=lang,
-                       curr=i18n.t(repr(self.user_type), lang))
+                i18n.t(
+                    "settings.options.language_curr",
+                    locale=lang,
+                    curr=i18n.t(
+                        repr(self.language),
+                        lang
+                    )
+                ),
+                i18n.t(
+                    "settings.options.mapprovider_curr",
+                    locale=lang,
+                    curr=i18n.t(
+                        repr(self.map_provider),
+                        lang
+                    )
+                ),
+                i18n.t(
+                    "settings.options.usertype_curr",
+                    locale=lang,
+                    curr=i18n.t(
+                        repr(self.user_type),
+                        lang
+                    )
+                ),
+                i18n.t(
+                    "settings.options.outputtype_curr",
+                    locale=lang,
+                    curr=i18n.t(
+                        repr(self.output_type),
+                        lang
+                    )
+                )
             ]
         )
 
@@ -164,7 +189,8 @@ class UserSettings:
             {
                 i18n.t("settings.options.language", lang): {"callback_data" : "user_language"},
                 i18n.t("settings.options.mapprovider", lang): {"callback_data" : "map_provider"},
-                i18n.t("settings.options.usertype", lang): {"callback_data" : "user_type"}
+                i18n.t("settings.options.usertype", lang): {"callback_data" : "user_type"},
+                i18n.t("settings.options.outputtype", lang): {"callback_data" : "output_type"}
             },
             row_width=1
         )
@@ -201,6 +227,7 @@ class UserSettingsManager:
                     language TEXT NOT NULL,
                     map_provider TEXT NOT NULL,
                     user_type TEXT NOT NULL,
+                    output_type TEXT NOT NULL,
                     bot_state INTEGER NOT NULL,
                     inline_chat_id INTEGER,
                     inline_message_id INTEGER,
@@ -220,6 +247,7 @@ class UserSettingsManager:
                     language,
                     map_provider,
                     user_type,
+                    output_type,
                     bot_state,
                     inline_chat_id,
                     inline_message_id,
@@ -241,11 +269,12 @@ class UserSettingsManager:
                     language=UserLanguage(result[0]),
                     map_provider=MapProvider(result[1]),
                     user_type=UserType(result[2]),
-                    bot_state=InteractionStates(result[3]),
-                    inline_buttons=BotMessage(result[4], result[5]),
-                    auto_alert=BotMessage(result[6], result[7]),
-                    alert_set=bool(result[8]),
-                    timer=RecommendationTimer(result[9], result[10], result[11])
+                    output_type=OutputType(result[3]),
+                    bot_state=InteractionStates(result[4]),
+                    inline_buttons=BotMessage(result[5], result[6]),
+                    auto_alert=BotMessage(result[7], result[8]),
+                    alert_set=bool(result[9]),
+                    timer=RecommendationTimer(result[10], result[11], result[12])
                 ) if result is not None else UserSettings()
 
     async def __aenter__(self) -> UserSettings:
@@ -269,7 +298,9 @@ class UserSettingsManager:
                     user_id,
                     language,
                     map_provider,
-                    user_type, bot_state,
+                    user_type,
+                    output_type,
+                    bot_state,
                     inline_chat_id,
                     inline_message_id,
                     auto_alert_chat_id,
@@ -278,13 +309,14 @@ class UserSettingsManager:
                     timer_time,
                     timer_date,
                     timer_loc
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     self._user.id,
                     settings.language.value,
                     settings.map_provider.value,
                     settings.user_type.value,
+                    settings.output_type.value,
                     settings.bot_state.value,
                     settings.inline_buttons.chat_id,
                     settings.inline_buttons.message_id,
