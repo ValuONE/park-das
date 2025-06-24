@@ -7,11 +7,11 @@ from src.park_das.monkey_patch import aioschedule
 from src.park_das.scrapper import fetch_data
 from src.park_das.handlers import bot
 from src.park_das import voice_support # pylint: disable=unused-import
-from src.park_das.constants import UserLanguage
 from src.park_das import output_support # pylint: disable=unused-import
+from src.park_das.constants import UserLanguage
 
-logging.basicConfig(level=logging.INFO, stream=sys.stdout)
-logging.getLogger("telebot").setLevel(logging.DEBUG)
+logging.basicConfig(level=logging.ERROR, stream=sys.stdout)
+logging.getLogger("telebot").setLevel(logging.ERROR)
 
 # Set translation data
 i18n.load_path.append("./i18n")

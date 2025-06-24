@@ -8,31 +8,25 @@ implemented command logic for text messages is used unchanged.
 All previous keyword routing functions have been removed - this module only performs speech-to-text.
 """
 
-from __future__ import annotations
-
+import os
 import asyncio
 import logging
-import os
 import tempfile
 
 from pathlib import Path
 
 import whisper
-from telebot import formatting, types
-from telebot.async_telebot import AsyncTeleBot
-from telebot.states.sync import StateContext
 
-import i18n
+from telebot import types
 
 from .bot import bot
-from .handlers import free_text_handler
-from .models import UserSettingsManager
 
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Whisper‑Initialization
 # ---------------------------------------------------------------------------
+
 _MODEL_SIZE = os.getenv("WHISPER_MODEL_SIZE", "tiny")
 _whisper_model: whisper.Whisper | None = None
 
@@ -69,10 +63,8 @@ async def _ogg_to_wav(ogg_path: str) -> str:
 # Haupt‑Handler
 # ---------------------------------------------------------------------------
 
-async def _voice_handler(message: types.Message, state: StateContext):
+async def transcripe(message: types.Message) -> str | None:
     """Process incoming voice messages."""
-
-    chat_id = message.chat.id
 
     # Download the voice message
     async with bot as api:
@@ -92,41 +84,18 @@ async def _voice_handler(message: types.Message, state: StateContext):
     # Transcribe (blocking -> thread pool)
     loop = asyncio.get_running_loop()
     try:
-        async with UserSettingsManager(message.from_user) as settings:
-            try:
-                result = await loop.run_in_executor(
-                    None,
-                    lambda: _whisper().transcribe(wav_path, language=None)
-                )
-                text: str = result.get("text", "").strip()
+        result = await loop.run_in_executor(
+            None,
+            lambda: _whisper().transcribe(
+                wav_path,
+                language=None,
+                fp16=False
+            )
+        )
+        return result.get("text", "").strip()
 
-            except Exception: # pylint: disable=broad-exception-caught
-                logger.exception("Transcription failed")
-                text = ""
+    except Exception: # pylint: disable=broad-exception-caught
+        logger.exception("Transcription failed")
+        return None
     finally:
         Path(wav_path).unlink(missing_ok=True)
-
-
-    if not text:
-        await bot.api.send_message(
-            chat_id,
-            i18n.t("voice.not_understood", str(settings.language))
-        )
-        return
-
-    # Echo so the user knows what was transcribed
-    await bot.api.send_message(
-        chat_id,
-        formatting.escape_markdown(f"*{text}*"),
-        parse_mode="Markdown",
-    )
-
-    message.text = text
-    await free_text_handler(message, state)
-
-def register_voice_handler(bot_instance: AsyncTeleBot | None = None):
-    (bot_instance or bot).api.message_handler(content_types=["voice"])(_voice_handler)
-    logger.info("Voice handler registered.")
-
-# Registrate voice handler on module import
-register_voice_handler()

@@ -1,4 +1,4 @@
-﻿from enum import Enum
+﻿from enum import Enum, auto
 from json import dumps
 
 from telebot.util import quick_markup
@@ -148,3 +148,9 @@ class UserType(SettingsEnum):
 class OutputType(SettingsEnum):
     TEXT = "settings.outputtype.text"
     VOICE = "settings.outputtype.voice"
+    UNDEFINED = "settings.undefined"
+
+class InteractionStates(Enum):
+    IDLE = auto()
+    NEED_DATE_TIME = auto()
+    PROXIMITY_TRIGGERED = auto()

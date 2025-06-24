@@ -20,6 +20,7 @@ _genai_client = genai.Client(
 class BotCommands(Enum):
     NAVIGATION = "Navigation"
     TIMER = "Timing"
+    AUTOMATIC = "Automatic"
     RECOMMEND = "Recommend"
     OVERVIEW = "Overview"
     UNKNOWN = "Unknown"
@@ -35,26 +36,34 @@ class BotCommands(Enum):
 
 #pylint: disable=too-few-public-methods
 class _ParsedTimeAndLocation(BaseModel):
-    time_estimate : str | None = Field(
+    time_estimate: str | None = Field(
         description=(
             "The best time estimate as a string in ISO 8601 format,"
             "or None if the message did not contain time information."
         ),
         default=None
     )
-    location : str | None = Field(
+    location: str | None = Field(
         description=(
             "A string that contains a location, such as a building, parking spot,"
             "or None if the message did not contain location information."
         ),
         default=None
     )
+    cancel: bool = Field(
+        description=(
+            "A flag is True if there is intend about cancelling a timer / reminder,"
+            "or False if the intend is unclear or not to cancel a timer / reminder."
+        ),
+        default=False
+    )
 #pylint: enable=too-few-public-methods
 
 @dataclass
 class TimeLocation():
-    time : datetime | None = None
-    location : str | None = None
+    time: datetime | None = None
+    location: str | None = None
+    cancel: bool = False
 
 async def parse_command(user_txt : str | None) -> BotCommands:
     if user_txt is None:
@@ -73,6 +82,7 @@ async def parse_command(user_txt : str | None) -> BotCommands:
 
         Navigation: Sends a map of available parking spots which the user can use to navigate to a parking spot.
         Timing: Sends information about parking spot occupancy after a given time, so the user knows where to park on arrival.
+        Automatic: When used and location sharing is enabled, automatic parking recommendations are sent on arrival.
         Recommend: Prompts the user to share their location and recommends spots based on where they are.
         Overview: Lists all parking spots and their occupancy regardless of location as a text message.
         Unknown: Catch-all, asks user for clarification if no other command matches.
@@ -87,6 +97,10 @@ async def parse_command(user_txt : str | None) -> BotCommands:
             - "I will be on campus in 15 min."
             - "Tomorrow morning I will be in Ulm around 9."
             - "I need a parking spot when I arrive in half an hour."
+        Automatic:
+            - "Can you send me recommendations automatically?"
+            - "I would like a recommendation when I get there."
+            - "Always send a recommendation when I arrive on campus."
         Recommend:
             - "Where can I park nearby?"
             - "Is there a parking spot near O27?"
@@ -131,27 +145,33 @@ async def parse_time_location(user_txt : str | None) -> TimeLocation:
         If only a date or only a time is provided, use reasonable estimates for the missing information.
         For relative dates or times, the current time is {datetime.now().isoformat(timespec='minutes')}.
 
-        If there is no time information in the message at all, the output can be None.
+        If there is no time information in the message at all, the timestamp can be None.
 
         Additionally, you should also extract location information if it is present.
         The locations could be parking spots, such as "P1", "Parkplatz 20" or "Parkhaus Helmholtzstraße",
         or buildings and rooms such as "O25", "N24 room 227" or "Lecture hall H20".
-        If no location information or no time information is present, the output can be None instead.
+        If no location information or no time information is present, the location can be None.
 
-        Here are some examples of the expected output ("message": "timestamp", "location"):
+        If the message signals that the user wants to abort setting a time, the cancel flag should be set.
+
+        Here are some examples of the expected output ("message": "timestamp", "location", "cancel"):
 
         "I will be on campus in half an hour":
-            "2025-06-16T10:26:00", "Campus" (assuming it is 2025-06-16T09:56:00)
+            "2025-06-16T10:26:00", "Campus", "False" (assuming it is 2025-06-16T09:56:00)
         "I need a parking spot near H20 tomorrow morning":
-            "2025-06-15T09:00:00", "H20" (assuming it is 2025-06-14T17:30:00)
+            "2025-06-15T09:00:00", "H20", "False" (assuming it is 2025-06-14T17:30:00)
         "Send me recommendations when I arrive at ten":
-            "2025-06-13T10:00:00", "None" (assuming it is 2025-06-13T08:30:00)
+            "2025-06-13T10:00:00", "None", "False" (assuming it is 2025-06-13T08:30:00)
         "I should arrive in 15 minutes":
-            "2025-06-10T07:57:00", "None" (assuming it is 2025-06-10T07:42:00)
+            "2025-06-10T07:57:00", "None", "False" (assuming it is 2025-06-10T07:42:00)
         "I need a parking spot for my exercise in 2103 in 20 minutes":
-            "2025-06-08T14:24:00", "2103" (assuming it is 2025-06-08T14:04:00)
+            "2025-06-08T14:24:00", "2103", "False" (assuming it is 2025-06-08T14:04:00)
         "What's the wheater like in Ulm":
-            "None", "None"
+            "None", "None", "False"
+        "Remove the timer":
+            "None", "None", "True"
+        "I do not want to be sent a recommendation":
+            "None", "None", "True"
         """,
         response_mime_type="application/json",
         response_schema=_ParsedTimeAndLocation,
@@ -174,10 +194,11 @@ async def parse_time_location(user_txt : str | None) -> TimeLocation:
     if parsed.time_estimate is not None:
         return TimeLocation(
             dateparser.parse(parsed.time_estimate, languages=i18n.get("available_locales")),
-            None if parsed.location == "None" else parsed.location
+            None if parsed.location == "None" else parsed.location,
+            parsed.cancel
         )
 
-    return TimeLocation()
+    return TimeLocation(None, None, parsed.cancel)
 
 async def test():
     test_sentences = [
