@@ -77,6 +77,8 @@ async def _send_voice(self: AsyncTeleBot, chat_id: int, text: str, **kw):
     visible in the chat but are not read aloud.
     """
 
+    voice_only: bool = kw.pop("voice_only", False)
+
     async with UserSettingsManager(chat_id) as s:
         # ------------------------------------------------------------------
         # TEXT-only users
@@ -99,12 +101,16 @@ async def _send_voice(self: AsyncTeleBot, chat_id: int, text: str, **kw):
         path = await _tts(spoken_text, locale)
         try:
             kw.pop("parse_mode", None)
+
             with open(path, "rb") as fh:
-                voice_msg = await self.send_voice(
-                    chat_id,
-                    fh,
-                    caption=text,  # original message (incl. Emojis)
-                    **kw,
+                if voice_only:
+                    voice_msg = await self.send_voice(chat_id, fh, **kw)
+                else:
+                    voice_msg = await self.send_voice(
+                        chat_id,
+                        fh,
+                        caption=text,  # original message (incl. Emojis)
+                        **kw,
                 )
         finally:
             try:
@@ -185,3 +191,34 @@ async def patched_edit_message_text(
     return sent
 
 AsyncTeleBot.edit_message_text = patched_edit_message_text  # type: ignore
+
+_original_send_photo = AsyncTeleBot.send_photo     # Backup des Originals
+
+async def patched_send_photo(self, chat_id: int, photo, *a, **kw):  # type: ignore
+    """
+    Für VOICE-User wird vor dem Foto eine Sprachnachricht mit der Caption
+    gesendet. Reihenfolge: Placeholder → Voice → Bild, sodass die
+    Sprachnachricht *über* dem Bild erscheint.
+    """
+    caption: str = kw.get("caption") or ""
+
+    # Settings holen
+    async with UserSettingsManager(chat_id) as s:
+        voice_user = s.output_type == OutputType.VOICE
+
+    # Nur wenn VOICE + Caption vorhanden
+    if voice_user and caption.strip():
+        # optional: reply_to / parse_mode aus den ursprünglichen kw weitergeben
+        await _send_voice(
+            self,
+            chat_id,
+            caption,
+            reply_to_message_id=kw.get("reply_to_message_id"),
+            voice_only=True
+        )
+
+    # Danach das eigentliche Foto posten
+    return await _original_send_photo(self, chat_id, photo, *a, **kw)
+
+# Patch aktivieren
+AsyncTeleBot.send_photo = patched_send_photo  # type: ignore
