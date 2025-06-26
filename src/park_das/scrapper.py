@@ -103,15 +103,15 @@ async def scrape_data(is_visitor: bool = False, scrape_all: bool = False) -> Lis
         )
 
         data = []
-        if not result.success:
-            print("Default-Crawl failed:", result.error_message)
+        if not result.success: # type: ignore
+            print("Default-Crawl failed:", result.error_message) # type: ignore
             return data
 
-        for item in json.loads(result.extracted_content):
+        for item in json.loads(result.extracted_content): # type: ignore
             name: str = item["name"]
             numbers: str = item["p_number"]
             free_spaces: str = item["free_spaces"]
-            total_spaces: str = search(r'\d+', item["total_spaces"]).group()
+            total_spaces: str = search(r'\d+', item["total_spaces"]).group() # type: ignore
 
             if not name or not numbers or not free_spaces:
                 continue
@@ -136,11 +136,11 @@ async def scrape_data(is_visitor: bool = False, scrape_all: bool = False) -> Lis
             config=config_helmholtz
         )
 
-        if not result.success:
-            print("PBW-Crawl failed:", result.error_message)
+        if not result.success: # type: ignore
+            print("PBW-Crawl failed:", result.error_message) # type: ignore
             return data
 
-        item = json.loads(result.extracted_content)[0]
+        item = json.loads(result.extracted_content)[0] # type: ignore
         if not item["total_spaces"] or not item["free_spaces"]:
             return data
 

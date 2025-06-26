@@ -31,7 +31,8 @@ class CarParkNames(Enum):
     def __str__(self) -> str:
         return self.name
 
-    def get_pos(self) -> Location:
+    @property
+    def geo_pos(self) -> Location:
         return CAR_PARK_LOCATIONS[self]
 
     @classmethod

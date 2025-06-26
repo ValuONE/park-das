@@ -54,7 +54,7 @@ class CarPark:
 
         :return: A telegram location containing the latitude and longitude of the car park.
         """
-        return self.code_name.get_pos()
+        return self.code_name.geo_pos
 
     @property
     def almost_full(self) -> bool:
@@ -86,10 +86,10 @@ class CarPark:
 
     def to_label(self, index: int | None) -> str:
         """
-        _summary_
+        Index (0, ...) to char (1 ... 9, A ... Z)
 
-        :param index: _description_
-        :return: _description_
+        :param index: Index of spot in list
+        :return: Char to be used as label
         """
         return ("" if index is None else
                 chr(48 + index) if index < 10 else chr(55 + index))
