@@ -307,8 +307,13 @@ async def navigation_handler(message: types.Message):
         ]
 
         spot_btns = {
-            f"{parking_spots.index(p) + 1}: {p.free_spaces} {p.occupancy_level}":
-                build_routing_data(p.geo_pos, s.map_provider)
+            i18n.t(
+                "strings.navigation_btn",
+                locale=str(s.language),
+                index=p.to_label(parking_spots.index(p) + 1),
+                level=p.occupancy_level,
+                free=p.free_spaces
+            ) : build_routing_data(p.geo_pos, s.map_provider)
             for p in parking_spots
         }
 

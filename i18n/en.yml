@@ -48,6 +48,7 @@ en:
     automatic_tutorial: Please enable live location sharing to recieve automatic recommendations!
     automatic_triggered: Welcome on campus 🎓!
     navigation_msg: "Navigation links to recommended parking spots:"
+    navigation_btn: "%{index}: %{level} %{free}"
     voice:
       processing: ⏳ Message is being processed ⌛️
       not_understood: No text could be recognized 😕. Please try again 🔄.

@@ -48,6 +48,7 @@ de:
     automatic_tutorial: Bitte Live Standort teilen um automatische Empfehlung zu erhalten!
     automatic_triggered: Willkommen am Campus 🎓!
     navigation_msg: "Navigationslinks zu empfohlenen Parkplätzen:"
+    navigation_btn: "%{index}: %{level} %{free}"
     voice:
       processing: ⏳ Nachricht wird verarbeitet ⌛️
       not_understood: Es wurde kein Text erkannt 😕. Bitte erneut versuchen 🔄.
