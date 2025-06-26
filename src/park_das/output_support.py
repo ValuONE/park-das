@@ -22,20 +22,19 @@ from .bot import bot
 EMOJI_PATTERN = re.compile(
     "["
     "\U0001F600-\U0001F64F"  # Emoticons
-    "\U0001F300-\U0001F5FF"  # Symbole & Piktogramme
-    "\U0001F680-\U0001F6FF"  # Transport & Karten
-    "\U0001F700-\U0001F77F"  # Alchemistische Symbole
-    "\U0001F780-\U0001F7FF"  # Geometrische Formen
-    "\U0001F800-\U0001F8FF"  # Zusätzliche Pfeile
-    "\U0001F900-\U0001F9FF"  # Zusätzliche Symbole
-    "\U0001FA00-\U0001FA6F"  # Erweiterte Symbole
-    "\U0001FA70-\U0001FAFF"  # Weitere erweiterte Symbole
+    "\U0001F300-\U0001F5FF"  # Symbols & pictograms
+    "\U0001F680-\U0001F6FF"  # Transport & Maps
+    "\U0001F700-\U0001F77F"  # Alchemical symbols
+    "\U0001F780-\U0001F7FF"  # Geometric shapes
+    "\U0001F800-\U0001F8FF"  # Additional arrows
+    "\U0001F900-\U0001F9FF"  # Additional icons
+    "\U0001FA00-\U0001FA6F"  # Advanced icons
+    "\U0001FA70-\U0001FAFF"  # More advanced icons ^^
     "\U00002702-\U000027B0"  # Dingbats
-    "\U000024C2-\U0001F251"  # Verschiedene allgemeine Symbole
+    "\U000024C2-\U0001F251"  # Various general symbols
     "]+",
     flags=re.UNICODE,
 )
-
 
 def remove_emojis(text: str) -> str:
     """Remove *all* emoji glyphs from *text* (for clean TTS)."""
@@ -70,23 +69,23 @@ async def _send_voice(self: AsyncTeleBot, chat_id: int, text: str, **kw):
     user preference; provides UX niceties for TTS generation.
 
     UX details (PA-01 & PA-02):
-    • Für *Sprachausgabe-Nutzer*innen* wird sofort ein Platzhalter
-      „Generiere Sprachnachricht…“ gesendet (mit *original* send_message, um
-      Rekursion zu verhindern).
-    • Sobald das MP3 fertig ist, wird der Platzhalter wieder gelöscht.
-    • Emojis werden nur für die *gesprochene* Version entfernt, damit sie im
-      Chat weiterhin sichtbar sind, aber nicht vorgelesen werden.
+    • For *speech output* users*, a placeholder
+    "Generating voice message..." is sent immediately (with *original* send_message to
+    prevent recursion).
+    • Once the MP3 is ready, the placeholder is deleted.
+    • Emojis are removed only for the *spoken* version, so they remain
+    visible in the chat but are not read aloud.
     """
 
     async with UserSettingsManager(chat_id) as s:
         # ------------------------------------------------------------------
-        # TEXT-only users → nichts Besonderes
+        # TEXT-only users
         # ------------------------------------------------------------------
         if s.output_type != OutputType.VOICE:
             return await _original_send_message(self, chat_id, text, **kw)
 
         # ------------------------------------------------------------------
-        # VOICE users → erst Platzhalter, dann TTS
+        # VOICE users → first generate TTS message then TTS output itself
         # ------------------------------------------------------------------
         locale = str(s.language)
         placeholder_msg = await _original_send_message(
@@ -99,13 +98,12 @@ async def _send_voice(self: AsyncTeleBot, chat_id: int, text: str, **kw):
         spoken_text = remove_emojis(text)
         path = await _tts(spoken_text, locale)
         try:
-            # Markdown in voice captions ist unzuverlässig → deaktivieren
             kw.pop("parse_mode", None)
             with open(path, "rb") as fh:
                 voice_msg = await self.send_voice(
                     chat_id,
                     fh,
-                    caption=text,  # originale Nachricht (inkl. Emojis)
+                    caption=text,  # original message (incl. Emojis)
                     **kw,
                 )
         finally:
@@ -114,7 +112,7 @@ async def _send_voice(self: AsyncTeleBot, chat_id: int, text: str, **kw):
             except OSError:
                 pass
 
-        # Platzhalter entfernen
+        # Remove placeholder message
         try:
             await self.delete_message(chat_id, placeholder_msg.message_id)
         except Exception:  # pylint: disable=broad-exception-caught
@@ -142,9 +140,9 @@ AsyncTeleBot.send_message = patched_send_message  # type: ignore
 AsyncTeleBot.reply_to = patched_reply_to  # type: ignore
 
 
-# --------------------------------------------------------------------------- #
-# Patch edit_message_text (Voice-Nachrichten haben keinen editierbaren Text)  #
-# --------------------------------------------------------------------------- #
+# ---------------------------------------------------------------------------
+# Patch edit_message_text (Voice messages do not have editable text)
+# ---------------------------------------------------------------------------
 
 async def patched_edit_message_text(
         self,
@@ -154,7 +152,7 @@ async def patched_edit_message_text(
         inline_message_id: str | None = None,
         **kw,
 ):
-    # Inline-Nachrichten anderer Bots → nicht anfassen
+    # Inline-messages of other Bots → do not touch them
     if inline_message_id is not None:
         return await _original_edit_message_text(
             self,
@@ -171,7 +169,7 @@ async def patched_edit_message_text(
                 self, text, chat_id=chat_id, message_id=message_id, **kw
             )
 
-    # Voice-User: neue Audio-Nachricht schicken, alte löschen
+    # Voice-User: send new voice message, delete old one
     has_buttons = "reply_markup" in kw
     reply_markup = kw.pop("reply_markup", None)
     sent = await _send_voice(self, chat_id, text, reply_markup=reply_markup)
