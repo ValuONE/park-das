@@ -163,7 +163,7 @@ async def fetch_data():
     worker_data = await scrape_data()
 
     global parking_data
-    parking_data = list({p.name: p for p in (visitor_data + worker_data)}.values())
+    parking_data = list({p.code_name: p for p in (visitor_data + worker_data)}.values())
 
 
 async def get_data(is_visitor: bool) -> List[CarPark]:
@@ -180,6 +180,6 @@ async def get_data(is_visitor: bool) -> List[CarPark]:
                        while worker parking spaces are filtered using `WORKER_PARK_LOCATIONS`.
     """
     if is_visitor:
-        return [p for p in parking_data if p.name in VISITOR_PARK_LOCATIONS]
+        return [p for p in parking_data if p.code_name in VISITOR_PARK_LOCATIONS]
 
-    return [p for p in parking_data if p.name in WORKER_PARK_LOCATIONS]
+    return [p for p in parking_data if p.code_name in WORKER_PARK_LOCATIONS]

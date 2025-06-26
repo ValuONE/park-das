@@ -28,6 +28,9 @@ class CarParkNames(Enum):
     M3 = "Frauenklinik M3"
     M4 = "Urologische Klinik M4"
 
+    def __str__(self) -> str:
+        return self.name
+
     def get_pos(self) -> Location:
         return CAR_PARK_LOCATIONS[self]
 

@@ -20,9 +20,16 @@ en:
       
       Please select a map provider using
       /settings first!
-    overview_campus: "🎓 University parking spots:\n\n"
-    overview_city: "🏙️ City parking spots:\n\n"
-    overview_msg: "%{name} : %{free} free | %{occupancy}\n"
+    overview_campus: |
+      🎓 University parking spots:
+
+      %{msg}
+    overview_city: |
+      🏙️ City parking spots:
+
+      %{msg}
+    overview_single: "%{name} : %{free} free | %{occupancy}"
+    overview_multiple: "%{index} %{.overview_single}"
     command_unknown: |
       Input was not recognized as a command 🚫.
       Please enter a different prompt 📝.
