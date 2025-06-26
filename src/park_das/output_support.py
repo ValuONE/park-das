@@ -196,19 +196,23 @@ _original_send_photo = AsyncTeleBot.send_photo     # Backup des Originals
 
 async def patched_send_photo(self, chat_id: int, photo, *a, **kw):  # type: ignore
     """
-    Für VOICE-User wird vor dem Foto eine Sprachnachricht mit der Caption
-    gesendet. Reihenfolge: Placeholder → Voice → Bild, sodass die
-    Sprachnachricht *über* dem Bild erscheint.
+    For VOICE users, a voice message with the caption is sent before the photo.
+
+    Sequence: Placeholder → Voice → Image, so that the
+
+    voice message appears *above* the image.
+
     """
+
     caption: str = kw.get("caption") or ""
 
-    # Settings holen
+    # Load settings
     async with UserSettingsManager(chat_id) as s:
         voice_user = s.output_type == OutputType.VOICE
 
-    # Nur wenn VOICE + Caption vorhanden
+    # Only if VOICE + Caption is present
     if voice_user and caption.strip():
-        # optional: reply_to / parse_mode aus den ursprünglichen kw weitergeben
+        # optional: pass reply_to / parse_mode from the original kw
         await _send_voice(
             self,
             chat_id,
@@ -217,8 +221,8 @@ async def patched_send_photo(self, chat_id: int, photo, *a, **kw):  # type: igno
             voice_only=True
         )
 
-    # Danach das eigentliche Foto posten
+    # Then post the actual photo
     return await _original_send_photo(self, chat_id, photo, *a, **kw)
 
-# Patch aktivieren
+# Activate patch
 AsyncTeleBot.send_photo = patched_send_photo  # type: ignore
