@@ -5,10 +5,11 @@ import os
 import re
 import tempfile
 
-import i18n
 from gtts import gTTS
 from telebot.async_telebot import AsyncTeleBot
 from telebot import types
+
+import i18n
 
 from .constants import OutputType
 from .models import UserSettingsManager
@@ -184,6 +185,5 @@ async def patched_edit_message_text(
         pass
 
     return sent
-
 
 AsyncTeleBot.edit_message_text = patched_edit_message_text  # type: ignore
