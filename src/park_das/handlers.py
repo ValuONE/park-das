@@ -192,11 +192,12 @@ async def service_handler(message: types.Message):
     Triggers when user's live location is close enough to campus / inner city.
     """
     async with UserSettingsManager(message.from_user) as s:
-        s.bot_state = InteractionStates.PROXIMITY_TRIGGERED
-        await bot.api.send_message(
-            message.chat.id,
-            i18n.t("strings.automatic_triggered", str(s.language))
-        )
+        if not s.bot_state == InteractionStates.PROXIMITY_TRIGGERED:
+            s.bot_state = InteractionStates.PROXIMITY_TRIGGERED
+            await bot.api.send_message(
+                message.chat.id,
+                i18n.t("strings.automatic_triggered", str(s.language))
+            )
 
 
 @bot.api.message_handler(content_types=["location"])
@@ -206,6 +207,8 @@ async def location_handler(message: types.Message):
     Receives user's location and returns sorted car parks.
     """
     async with UserSettingsManager(message.from_user) as s:
+        lang = str(s.language)
+
         if message.location is None:
             return
 
@@ -252,19 +255,19 @@ async def location_handler(message: types.Message):
                     p,
                     haversine_distance(
                         message.location,
-                        p.get_pos()
+                        p.geo_pos
                     )
                 )
                 for p in await get_data(s.user_type == UserType.VISITOR)
-                if not p.almost_full()
+                if not p.almost_full
             ],
             key=lambda t: t[1]
         )[0][0]
 
         # Determine the map provider to use for building URLs
         markup = util.quick_markup({
-                i18n.t("strings.recommended_space_nav_msg", str(s.language)):
-                build_routing_data(closest_park.get_pos(), s.map_provider)
+                i18n.t("strings.recommended_space_nav_msg", lang):
+                build_routing_data(closest_park.geo_pos, s.map_provider)
             },
             row_width=1
         )
@@ -280,8 +283,8 @@ async def location_handler(message: types.Message):
                     message.chat.id,
                     i18n.t(
                         "strings.recommended_space_msg",
-                        locale=str(s.language),
-                        spot=closest_park.to_pretty(str(s.language))
+                        locale=lang,
+                        spot=closest_park.to_pretty(lang)
                     ),
                     reply_markup=markup
                 )
@@ -299,17 +302,13 @@ async def navigation_handler(message: types.Message):
         parking_spots = await get_data(s.user_type == UserType.VISITOR)
         parking_spots.sort(key=lambda p: p.free_spaces, reverse=True)
         parking_spots = [
-            p for p in parking_spots if not p.name.name.startswith("M")
+            p for p in parking_spots if not p.is_inner_city
             and p.free_spaces > 0
         ]
 
-        # At most 9, as double digits cannot be displayed on markers
-        while len(parking_spots) > 9:
-            parking_spots.pop()
-
         spot_btns = {
-            f"{parking_spots.index(p) + 1}: {p.free_spaces} {p.occupancy_level()}":
-                build_routing_data(p.get_pos(), s.map_provider)
+            f"{parking_spots.index(p) + 1}: {p.free_spaces} {p.occupancy_level}":
+                build_routing_data(p.geo_pos, s.map_provider)
             for p in parking_spots
         }
 
@@ -355,24 +354,29 @@ async def overview_handler(message: types.Message):
     async with UserSettingsManager(message.from_user) as s:
         s.bot_state = InteractionStates.IDLE
         lang = str(s.language)
-        car_parks = await get_data(s.user_type == UserType.VISITOR)
-        response = i18n.t('strings.overview_campus', lang)
+        all_spots = await get_data(s.user_type == UserType.VISITOR)
 
-        city_car_parks = []
-        for car_park in car_parks:
-            if car_park.name.name.startswith("M"):
-                city_car_parks.append(car_park)
-                continue
+        sorted_spots = {"overview_campus" : [], "overview_city": []}
+        for c in all_spots:
+            (sorted_spots["overview_campus"],
+             sorted_spots["overview_city"])[c.is_inner_city].append(c)
 
-            response += car_park.to_pretty(lang)
+        for key, spots in sorted_spots.items():
+            overview_msg = i18n.t(
+                f"strings.{key}",
+                locale=lang,
+                msg="\n".join([c.to_pretty(lang, spots.index(c) + 1) for c in spots])
+            )
 
-        if len(city_car_parks) > 0:
-            response += i18n.t('strings.overview_city', lang)
-            for car_park in city_car_parks:
-                response += car_park.to_pretty(lang)
-
-        async with bot as api:
-            await api.send_message(message.chat.id, response)
+            # Fetch map and send as photo
+            nav_map = static_map(markers=spots)
+            async with request("GET", nav_map) as req:
+                async with bot as api:
+                    await api.send_photo(
+                        message.chat.id,
+                        await req.read(),
+                        caption=overview_msg
+                    )
 
 
 @bot.api.message_handler(commands=["timer"])
@@ -470,8 +474,10 @@ async def recommend_on_timer(message: types.Message):
     Handler for set timers triggering.
     Activates navigation command when running out.
     """
-    aioschedule.clear(message.from_user.id) # type: ignore
-    await navigation_handler(message)
+    async with UserSettingsManager(message.from_user) as s:
+        aioschedule.clear(message.from_user.id) # type: ignore
+        s.timer = RecommendationTimer()
+        await navigation_handler(message)
 
 
 @bot.api.message_handler(content_types="text")

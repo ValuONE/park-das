@@ -20,22 +20,43 @@ class CarPark:
         free_spaces (int): The current number of available parking spaces.
         total_spaces (int): The total number of available parking spaces.
     """
-    name: CarParkNames
+    code_name: CarParkNames
     free_spaces: int
     total_spaces: int
 
     _RATIO_FREE = 0.25
     _RATIO_CRITICAL = 0.1
     _RATIO_FULL = 0.0
+    _SPACES_FREE = 50
+    _SPACES_CRITICAL = 25
 
-    def get_pos(self) -> Location:
+    def __str__(self) -> str:
+        """
+        Returns name of parking area
+
+        :return: Parking area name
+        """
+        return str(self.code_name)
+
+    @property
+    def is_inner_city(self) -> bool:
+        """
+        Returns whether parking area is in the city
+
+        :return: Flag if parking spot is in the city
+        """
+        return str(self.code_name).startswith("M")
+
+    @property
+    def geo_pos(self) -> Location:
         """
         Returns the geographic position (latitude, longitude) of the car park.
 
         :return: A telegram location containing the latitude and longitude of the car park.
         """
-        return self.name.get_pos()
+        return self.code_name.geo_pos
 
+    @property
     def almost_full(self) -> bool:
         """
         Determines if parking spot is basically full already
@@ -45,6 +66,7 @@ class CarPark:
         ratio = self.free_spaces / self.total_spaces
         return ratio < self._RATIO_CRITICAL
 
+    @property
     def occupancy_level(self) -> str:
         """
         Get a visual representation of the current occupancy level
@@ -52,25 +74,42 @@ class CarPark:
         :return: Emoji that signifies occupancy level
         """
         ratio = self.free_spaces / self.total_spaces
-        if ratio > self._RATIO_FREE:
+        if (ratio > self._RATIO_FREE or
+            self.free_spaces > self._SPACES_FREE):
             return "✅"
-        if self._RATIO_CRITICAL <= ratio < self._RATIO_FREE:
+        if (self._RATIO_CRITICAL <= ratio < self._RATIO_FREE or
+            self.free_spaces > self._SPACES_CRITICAL):
             return "⚠️"
         if self._RATIO_FULL < ratio < self._RATIO_CRITICAL:
             return "🛑"
         return "⛔️"
 
-    def to_pretty(self, lang : str) -> str:
+    def to_label(self, index: int | None) -> str:
+        """
+        Index (0, ...) to char (1 ... 9, A ... Z)
+
+        :param index: Index of spot in list
+        :return: Char to be used as label
+        """
+        return ("" if index is None else
+                chr(48 + index) if index < 10 else chr(55 + index))
+
+    def to_pretty(self, lang: str, index: int | None = None) -> str:
         """
         Formats a car park's information into a string.
 
         :return: A formatted string containing the car park's name, free spaces and a status icon.
         """
-        return i18n.t("strings.overview_msg",
-                      name = self.name.value,
-                      free = self.free_spaces,
-                      occupancy = self.occupancy_level(),
-                      locale=lang)
+        return i18n.t(
+            ("strings.overview_single"
+             if index is None else
+             "strings.overview_multiple"),
+            index=self.to_label(index),
+            name=self.code_name.value,
+            free=self.free_spaces,
+            occupancy=self.occupancy_level,
+            locale=lang
+        )
 
     # https://developers.google.com/maps/documentation/maps-static/start#Markers
     def to_map_marker(self, index : int) -> str:
@@ -80,23 +119,27 @@ class CarPark:
         :param index: Index is used as label
         :return: Marker as formatted string
         """
-        loc = self.get_pos()
-        col = "gray"
-        size = "tiny"
-
+        loc = self.geo_pos
         ratio = self.free_spaces / self.total_spaces
-        if ratio > self._RATIO_FREE:
+
+        if (ratio > self._RATIO_FREE or
+            self.free_spaces > self._SPACES_FREE):
             col = "green"
             size = ""
-        if self._RATIO_CRITICAL <= ratio < self._RATIO_FREE:
+        elif (self._RATIO_CRITICAL <= ratio < self._RATIO_FREE or
+            self.free_spaces > self._SPACES_CRITICAL):
             col = "yellow"
             size = "mid"
-        if self._RATIO_FULL < ratio < self._RATIO_CRITICAL:
+        elif self._RATIO_FULL < ratio < self._RATIO_CRITICAL:
             col = "red"
             size = "small"
+        else:
+            col = "gray"
+            size = "tiny"
+
         return (
             f"color:{col}|"
-            f"label:{index}|"
+            f"label:{self.to_label(index)}|"
             f"size:{size}|"
             f"scale:2|"
             f"{loc.latitude},{loc.longitude}"

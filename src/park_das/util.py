@@ -98,6 +98,7 @@ def static_map(markers: List[CarPark] | None = None, path: str | None = None) ->
 
     return base + urlencode(params)
 
+# https://developers.google.com/maps/documentation/routes/compute_route_directions
 def routing_request(
     origin: Location,
     destination: Location,

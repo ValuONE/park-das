@@ -20,9 +20,16 @@ de:
 
       Bitte erst einen Kartenanbieter mit
       /settings auswählen!
-    overview_campus: "🎓 Universitätsparkplätze:\n\n"
-    overview_city: "🏙️ Stadtparkplätze:\n\n"
-    overview_msg: "%{name} : %{free} frei | %{occupancy}\n"
+    overview_campus: |
+      🎓 Universitätsparkplätze:
+
+      %{msg}
+    overview_city: |
+      🏙️ Stadtparkplätze:
+
+      %{msg}
+    overview_single: "%{name} : %{free} frei | %{occupancy}"
+    overview_multiple: "%{index} %{.overview_single}"
     command_unknown: |
       Eingabe wurde nicht als Befehl erkannt 🚫.
       Bitte einen neuen Befehl eingeben 📝.

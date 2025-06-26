@@ -187,7 +187,7 @@ async def parse_time_location(user_txt : str | None) -> TimeLocation:
     parsed = _ParsedTimeAndLocation.model_construct()
 
     try:
-        parsed = _ParsedTimeAndLocation.model_validate_json(response.text)
+        parsed = _ParsedTimeAndLocation.model_validate_json(response.text) # type: ignore
     except ValidationError as e:
         raise ValueError("Gemini response empty or incorrect!") from e
 
