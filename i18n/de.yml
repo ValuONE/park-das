@@ -8,51 +8,65 @@ de:
     recommend: Standortabhängige Empfehlung zu nahen freien Parkplätzen mit Navigation.
     navigation: Zeigt freie Parkplätze auf Karte an, ermöglicht Navigation.
     timer: Schickt eine Parkempfehlung zu einem angegebenem Zeitpunkt.
-  strings:
-    help_msg: Folgende Befehle sind verfügbar
-    welcome_msg: 🤖 Willkommen bei ParkBot 🚘
-    location_btn: 📍 Standort senden
-    location_msg: Tippe auf „%{.location_btn}“, um deinen aktuellen Standort zu schicken.
-    recommended_space_msg: "Der empfohlene Parkplatz ist:\n\n%{spot}"
-    recommended_space_nav_msg: Navigation starten
+  error:
+    all_full: Leider sind aktuell keine Parkplätze frei!
+    command_unknown: |
+      Eingabe wurde nicht als Befehl erkannt 🚫.
+      Bitte einen neuen Befehl eingeben 📝.
     mapprovider_not_set: |
       ⚠️
 
       Bitte erst einen Kartenanbieter mit
       /settings auswählen!
-    overview_campus: |
+  help:
+    msg: "Folgende Befehle sind verfügbar:"
+  welcome:
+    msg: 🤖 Willkommen bei ParkBot 🚘
+  location:
+    btn: 📍 Standort senden
+    msg: Tippe auf „%{.btn}“, um deinen aktuellen Standort zu schicken.
+  recommended:
+    msg: |
+      Der empfohlene Parkplatz ist:
+
+      %{spot}
+    nav_msg: Navigation starten
+  overview:
+    campus: |
       🎓 Universitätsparkplätze:
 
       %{msg}
-    overview_city: |
+    city: |
       🏙️ Stadtparkplätze:
 
       %{msg}
-    overview_single: "%{name} : %{free} frei | %{occupancy}"
-    overview_multiple: "%{index} %{.overview_single}"
-    command_unknown: |
-      Eingabe wurde nicht als Befehl erkannt 🚫.
-      Bitte einen neuen Befehl eingeben 📝.
-    time_unknown: 📅 Wann und soll die Empfehlung gesendet werden? ⏰
-    timer_cancel: Empfehlung wurde gelöscht 🗑️!
-    timer_set: "Empfehlung wird am 📅 %{date} um ⏰ %{time} zugestellt!"
-    timer_loc_set: "Empfehlung für 📍 %{loc} wird am 📅 %{date} um ⏰ %{time} zugestellt!"
-    timer_set_cancel: Empfehlung wurde nicht gesetzt!
-    timer_set_already: |
+    single: "%{name}: %{free} frei | %{occupancy}"
+    multiple: "%{index}) %{.single}"
+  timer:
+    unknown: 📅 Wann und soll die Empfehlung gesendet werden? ⏰
+    cancel: Empfehlung wurde gelöscht 🗑️!
+    set: "Empfehlung wird am 📅 %{date} um ⏰ %{time} zugestellt!"
+    loc_set: "Empfehlung für 📍 %{loc} wird am 📅 %{date} um ⏰ %{time} zugestellt!"
+    set_cancel: Empfehlung wurde nicht gesetzt!
+    set_already: |
       ℹ️ Empfehlung ist bereits für ⏰ %{time} am 📅 %{date} eingestellt!
       🔄 Wie soll die Empfehlung abgeändert werden?
-    timer_loc_set_already: |
+    loc_set_already: |
       ℹ️ Empfehlung für 📍 %{loc} ist bereits für ⏰ %{time} am 📅 %{date} eingestellt!
       🔄 Wie soll die Empfehlung abgeändert werden?
-    timer_set_already_cancel: Empfehlung wurde nicht abgeändert!
-    automatic_tutorial: Bitte Live Standort teilen um automatische Empfehlung zu erhalten!
-    automatic_triggered: Willkommen am Campus 🎓!
-    navigation_msg: "Navigationslinks zu empfohlenen Parkplätzen:"
-    navigation_btn: "%{index}: %{level} %{free}"
-    voice:
-      processing: ⏳ Nachricht wird verarbeitet ⌛️
-      not_understood: Es wurde kein Text erkannt 😕. Bitte erneut versuchen 🔄.
-      echo_msg: "Erkannter Text 🎤:"
+    set_already_cancel: Empfehlung wurde nicht abgeändert!
+  automatic:
+    tutorial: Bitte Live Standort teilen um automatische Empfehlung zu erhalten!
+    set: Automatische Empfehlung aktiviert ⛳️!
+    cancel: Automatische Empfehlung deaktiviert 🗑️!
+    triggered: Willkommen am Campus 🎓!
+  navigation:
+    msg: "Navigationslinks zu empfohlenen Parkplätzen:"
+    btn: "%{index}: %{level} %{free}"
+  voice:
+    processing: ⏳ Nachricht wird verarbeitet ⌛️
+    not_understood: Es wurde kein Text erkannt 😕. Bitte erneut versuchen 🔄.
+    echo_msg: "Erkannter Text 🎤:"
   settings:
     back: ◀️ Zurück
     undefined: Nicht gesetzt ❌

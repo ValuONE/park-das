@@ -68,7 +68,7 @@ async def transcripe(message: types.Message) -> str | None:
 
     # Download the voice message
     async with bot as api:
-        file_info = await api.get_file(message.voice.file_id)
+        file_info = await api.get_file(message.voice.file_id) # type: ignore
         ogg_bytes = await api.download_file(file_info.file_path)
 
     with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as tmp:
@@ -92,7 +92,7 @@ async def transcripe(message: types.Message) -> str | None:
                 fp16=False
             )
         )
-        return result.get("text", "").strip()
+        return result.get("text", "").strip() # type: ignore
 
     except Exception: # pylint: disable=broad-exception-caught
         logger.exception("Transcription failed")

@@ -93,7 +93,7 @@ async def _send_voice(self: AsyncTeleBot, chat_id: int, text: str, **kw):
         placeholder_msg = await _original_send_message(
             self,
             chat_id,
-            i18n.t("strings.voice.processing", locale),
+            i18n.t("voice.processing", locale),
             reply_to_message_id=kw.get("reply_to_message_id"),
         )
 
@@ -178,11 +178,11 @@ async def patched_edit_message_text(
     # Voice-User: send new voice message, delete old one
     has_buttons = "reply_markup" in kw
     reply_markup = kw.pop("reply_markup", None)
-    sent = await _send_voice(self, chat_id, text, reply_markup=reply_markup)
+    sent = await _send_voice(self, chat_id, text, reply_markup=reply_markup) # type: ignore
 
     try:
         if has_buttons:
-            await bot.update_inline_buttons(chat_id, sent)
+            await bot.update_inline_buttons(chat_id, sent) # type: ignore
         else:
             await self.delete_message(chat_id, message_id)
     except Exception:  # pylint: disable=broad-exception-caught

@@ -8,7 +8,7 @@ from telebot.types import Location, User, InlineKeyboardMarkup
 import i18n
 
 from .constants import  CarParkNames, UserLanguage, UserType,\
-                        MapProvider, OutputType, InteractionStates
+                        MapProvider, OutputType, InteractionStates, CAR_PARK_LOCATIONS
 
 @dataclass
 class CarPark:
@@ -16,13 +16,15 @@ class CarPark:
     Represents a car park with a name and the number of available spaces.
     
     Attributes:
-        name (CarParkNames): The name of the car park, based on the CarParkNames enum.
-        free_spaces (int): The current number of available parking spaces.
-        total_spaces (int): The total number of available parking spaces.
+        _code_name: The name of the car park, based on the CarParkNames enum.
+        free_spaces: The current number of available parking spaces.
+        total_spaces: The total number of available parking spaces.
+        is_visitor: Flag whether this is a visitor parking spot.
     """
-    code_name: CarParkNames
+    _code_name: CarParkNames
     free_spaces: int
     total_spaces: int
+    is_visitor: bool
 
     _RATIO_FREE = 0.25
     _RATIO_CRITICAL = 0.1
@@ -30,13 +32,26 @@ class CarPark:
     _SPACES_FREE = 50
     _SPACES_CRITICAL = 25
 
+    def __eq__(self, value: object) -> bool:
+        """
+        Test for equality between parking spots
+
+        :param value: Other parking spot
+        :return: True if name is same
+        """
+        if isinstance(value, CarPark):
+            return self._code_name == value._code_name
+        if isinstance(value, CarParkNames):
+            return self._code_name == value
+        return False
+
     def __str__(self) -> str:
         """
         Returns name of parking area
 
         :return: Parking area name
         """
-        return str(self.code_name)
+        return str(self._code_name)
 
     @property
     def is_inner_city(self) -> bool:
@@ -45,7 +60,7 @@ class CarPark:
 
         :return: Flag if parking spot is in the city
         """
-        return str(self.code_name).startswith("M")
+        return str(self._code_name).startswith("M")
 
     @property
     def geo_pos(self) -> Location:
@@ -54,7 +69,7 @@ class CarPark:
 
         :return: A telegram location containing the latitude and longitude of the car park.
         """
-        return self.code_name.geo_pos
+        return CAR_PARK_LOCATIONS[self._code_name]
 
     @property
     def almost_full(self) -> bool:
@@ -101,11 +116,11 @@ class CarPark:
         :return: A formatted string containing the car park's name, free spaces and a status icon.
         """
         return i18n.t(
-            ("strings.overview_single"
+            ("overview.single"
              if index is None else
-             "strings.overview_multiple"),
+             "overview.multiple"),
             index=self.to_label(index),
-            name=self.code_name.value,
+            name=self._code_name.value,
             free=self.free_spaces,
             occupancy=self.occupancy_level,
             locale=lang
@@ -132,7 +147,7 @@ class CarPark:
             size = "mid"
         elif self._RATIO_FULL < ratio < self._RATIO_CRITICAL:
             col = "red"
-            size = "small"
+            size = "mid"
         else:
             col = "gray"
             size = "tiny"

@@ -162,9 +162,13 @@ class ParkBot:
                 )
             else:
                 try:
-                    await self.api.stop_message_live_location(
+                    to_delete = await self.api.stop_message_live_location(
                         s.auto_alert.chat_id,
                         s.auto_alert.message_id
+                    )
+                    await self.api.delete_message(
+                        to_delete.chat.id,
+                        to_delete.message_id
                     )
                 except Exception: # pylint: disable=broad-exception-caught
                     pass
@@ -182,7 +186,7 @@ class ParkBot:
         cmds = await bot.api.get_my_commands(scope=None, language_code=language)
         cmds_str = "\n".join([f"/{cmd.command} : {cmd.description}" for cmd in cmds])
         return formatting.format_text(
-            formatting.mbold(f"{i18n.t('strings.help_msg', language)}:"),
+            formatting.mbold(i18n.t("help.msg", language)),
             cmds_str
         )
 

@@ -43,7 +43,7 @@ async def start_handler(message: types.Message):
             await api.send_message(
                 message.chat.id,
                 formatting.format_text(
-                    formatting.mitalic(i18n.t("strings.welcome_msg", str(s.language))),
+                    formatting.mitalic(i18n.t("welcome.msg", str(s.language))),
                     "",
                     await bot.help_message(str(s.language))
                 ),
@@ -153,7 +153,7 @@ async def automatic_handler(message: types.Message):
                 message.chat.id,
                 await f.read(),
                 caption=i18n.t(
-                    "strings.automatic_tutorial",
+                    "automatic.tutorial",
                     str(s.language)
                 )
             )
@@ -173,14 +173,14 @@ async def recommend_handler(message: types.Message):
         )
 
         button_geo = types.KeyboardButton(
-            text=i18n.t("strings.location_btn", str(s.language)), request_location=True
+            text=i18n.t("location.btn", str(s.language)), request_location=True
         )
         markup.add(button_geo)
 
         async with bot as api:
             await api.send_message(
                 message.chat.id,
-                i18n.t("strings.location_msg", str(s.language)),
+                i18n.t("location.msg", str(s.language)),
                 reply_markup=markup,
             )
 
@@ -196,7 +196,7 @@ async def service_handler(message: types.Message):
             s.bot_state = InteractionStates.PROXIMITY_TRIGGERED
             await bot.api.send_message(
                 message.chat.id,
-                i18n.t("strings.automatic_triggered", str(s.language))
+                i18n.t("automatic.triggered", str(s.language))
             )
 
 
@@ -214,8 +214,6 @@ async def location_handler(message: types.Message):
 
         alert_triggered = s.bot_state == InteractionStates.PROXIMITY_TRIGGERED
 
-        # Campus: 9.94540, 48.42341, 1000
-        # Inner city: 9.99268, 48.40973, 500
         # If live location is activated for the first time
         if (message.location.live_period is not None and
             message.location.live_period > 0 and
@@ -223,16 +221,17 @@ async def location_handler(message: types.Message):
             # Ensure it is only set once
             if not s.alert_set:
                 s.alert_set = True
+                # Send a live location with proximity alert
                 await bot.update_bot_location(
                     message.from_user,
-                    types.Location(
-                        9.94540,
-                        48.42341,
-                        live_period=0x7FFFFFFF,
-                        proximity_alert_radius=1000
-                    ),
+                    s.user_type.live_pos,
                     message.chat.id
                 )
+                async with bot as api:
+                    await api.send_message(
+                        message.chat.id,
+                        i18n.t("automatic.set", str(s.language))
+                    )
             return
 
         # Remove alert if live location is no longer shared
@@ -243,11 +242,29 @@ async def location_handler(message: types.Message):
                 None,
                 message.chat.id
             )
+            async with bot as api:
+                await api.send_message(
+                    message.chat.id,
+                    i18n.t("automatic.cancel", str(s.language))
+                )
             return
 
         if alert_triggered:
             s.alert_set = False
             s.bot_state = InteractionStates.IDLE
+
+        options = [
+            p for p in await get_data(s.user_type)
+            if not p.almost_full
+        ]
+
+        if len(options) == 0:
+            async with bot as api:
+                await api.send_message(
+                    message.chat.id,
+                    i18n.t("error.all_full", str(s.language))
+                )
+                return
 
         closest_park = sorted(
             [
@@ -258,15 +275,14 @@ async def location_handler(message: types.Message):
                         p.geo_pos
                     )
                 )
-                for p in await get_data(s.user_type == UserType.VISITOR)
-                if not p.almost_full
+                for p in options
             ],
             key=lambda t: t[1]
         )[0][0]
 
         # Determine the map provider to use for building URLs
         markup = util.quick_markup({
-                i18n.t("strings.recommended_space_nav_msg", lang):
+                i18n.t("recommended.nav_msg", lang):
                 build_routing_data(closest_park.geo_pos, s.map_provider)
             },
             row_width=1
@@ -282,7 +298,7 @@ async def location_handler(message: types.Message):
                 await api.send_message(
                     message.chat.id,
                     i18n.t(
-                        "strings.recommended_space_msg",
+                        "recommended.msg",
                         locale=lang,
                         spot=closest_park.to_pretty(lang)
                     ),
@@ -299,7 +315,7 @@ async def navigation_handler(message: types.Message):
     """
     async with UserSettingsManager(message.from_user) as s:
         s.bot_state = InteractionStates.IDLE
-        parking_spots = await get_data(s.user_type == UserType.VISITOR)
+        parking_spots = await get_data(s.user_type)
         parking_spots.sort(key=lambda p: p.free_spaces, reverse=True)
         parking_spots = [
             p for p in parking_spots if not p.is_inner_city
@@ -308,7 +324,7 @@ async def navigation_handler(message: types.Message):
 
         spot_btns = {
             i18n.t(
-                "strings.navigation_btn",
+                "navigation.btn",
                 locale=str(s.language),
                 index=p.to_label(parking_spots.index(p) + 1),
                 level=p.occupancy_level,
@@ -316,6 +332,14 @@ async def navigation_handler(message: types.Message):
             ) : build_routing_data(p.geo_pos, s.map_provider)
             for p in parking_spots
         }
+
+        if len(spot_btns) == 0:
+            async with bot as api:
+                await api.send_message(
+                    message.chat.id,
+                    i18n.t("error.all_full", str(s.language))
+                )
+                return
 
         # Fetch map and send as photo
         nav_map = static_map(markers=parking_spots)
@@ -329,7 +353,7 @@ async def navigation_handler(message: types.Message):
                         row_width=floor(sqrt(len(parking_spots)))
                     ),
                     caption=i18n.t(
-                        "strings.navigation_msg",
+                        "navigation.msg",
                         str(s.language)
                     )
                 )
@@ -344,7 +368,7 @@ async def navigation_handler(message: types.Message):
                     await api.answer_callback_query(
                         cb.id,
                         formatting.format_text(
-                            i18n.t("strings.mapprovider_not_set", str(s.language))
+                            i18n.t("error.mapprovider_not_set", str(s.language))
                         ),
                         True
                     )
@@ -359,29 +383,30 @@ async def overview_handler(message: types.Message):
     async with UserSettingsManager(message.from_user) as s:
         s.bot_state = InteractionStates.IDLE
         lang = str(s.language)
-        all_spots = await get_data(s.user_type == UserType.VISITOR)
+        all_spots = await get_data(s.user_type)
 
-        sorted_spots = {"overview_campus" : [], "overview_city": []}
+        sorted_spots = {"overview.campus" : [], "overview.city": []}
         for c in all_spots:
-            (sorted_spots["overview_campus"],
-             sorted_spots["overview_city"])[c.is_inner_city].append(c)
+            (sorted_spots["overview.campus"],
+             sorted_spots["overview.city"])[c.is_inner_city].append(c)
 
         for key, spots in sorted_spots.items():
-            overview_msg = i18n.t(
-                f"strings.{key}",
-                locale=lang,
-                msg="\n".join([c.to_pretty(lang, spots.index(c) + 1) for c in spots])
-            )
+            if len(spots) > 0:
+                overview_msg = i18n.t(
+                    f"{key}",
+                    locale=lang,
+                    msg="\n".join([c.to_pretty(lang, spots.index(c) + 1) for c in spots])
+                )
 
-            # Fetch map and send as photo
-            nav_map = static_map(markers=spots)
-            async with request("GET", nav_map) as req:
-                async with bot as api:
-                    await api.send_photo(
-                        message.chat.id,
-                        await req.read(),
-                        caption=overview_msg
-                    )
+                # Fetch map and send as photo
+                nav_map = static_map(markers=spots)
+                async with request("GET", nav_map) as req:
+                    async with bot as api:
+                        await api.send_photo(
+                            message.chat.id,
+                            await req.read(),
+                            caption=overview_msg
+                        )
 
 
 @bot.api.message_handler(commands=["timer"])
@@ -401,7 +426,7 @@ async def timing_handler(message: types.Message):
                 if result.cancel:
                     await bot.api.reply_to(
                         message,
-                        i18n.t("strings.timer_cancel", str(s.language))
+                        i18n.t("timer.cancel", str(s.language))
                     )
                     aioschedule.clear(message.from_user.id) # type: ignore
                     s.timer = RecommendationTimer()
@@ -411,9 +436,9 @@ async def timing_handler(message: types.Message):
                         message,
                         i18n.t(
                             (
-                                "strings.timer_set_cancel" if
+                                "timer.set_cancel" if
                                 not s.timer.exists else
-                                "strings.timer_set_already_cancel"
+                                "timer.set_already_cancel"
                             ),
                             str(s.language))
                     )
@@ -425,9 +450,9 @@ async def timing_handler(message: types.Message):
                     message,
                     i18n.t(
                         (
-                            "strings.timer_set_already" if
+                            "timer.set_already" if
                             not s.timer.with_location else
-                            "strings.timer_loc_set_already"
+                            "timer.loc_set_already"
                         ),
                         time=s.timer.time,
                         date=s.timer.date,
@@ -438,7 +463,7 @@ async def timing_handler(message: types.Message):
             else:
                 await bot.api.reply_to(
                     message,
-                    i18n.t("strings.time_unknown", str(s.language))
+                    i18n.t("timer.unknown", str(s.language))
                 )
             s.bot_state = InteractionStates.NEED_DATE_TIME
         else:
@@ -446,9 +471,9 @@ async def timing_handler(message: types.Message):
 
             await bot.api.reply_to(message, i18n.t(
                 (
-                    "strings.timer_set" if
+                    "timer.set" if
                     result.location is None else
-                    "strings.timer_loc_set"
+                    "timer.loc_set"
                 ),
                 time=result.time.strftime("%H:%M"),
                 date=result.time.strftime("%-d.%-m."),
@@ -514,7 +539,7 @@ async def free_text_handler(message: types.Message):
                 await bot.api.reply_to(
                     message,
                     formatting.format_text(
-                        i18n.t("strings.command_unknown", str(s.language)),
+                        i18n.t("error.command_unknown", str(s.language)),
                         await bot.help_message(str(s.language))
                     ),
                     parse_mode="Markdown"
@@ -529,7 +554,7 @@ async def voice_input_handler(message: types.Message):
     async with UserSettingsManager(message.from_user) as s:
         processing = await bot.api.reply_to(
             message,
-            i18n.t("strings.voice.processing", str(s.language))
+            i18n.t("voice.processing", str(s.language))
         )
 
         recieved_text = await transcripe(message)
@@ -538,10 +563,10 @@ async def voice_input_handler(message: types.Message):
         # Echo so the user knows what was transcribed
         await bot.api.edit_message_text(
             (
-                i18n.t("strings.voice.not_understood", str(s.language)) if
+                i18n.t("voice.not_understood", str(s.language)) if
                 recieved_text is None else
                 formatting.format_text(
-                    i18n.t("strings.voice.echo_msg", str(s.language)),
+                    i18n.t("voice.echo_msg", str(s.language)),
                     formatting.mbold(recieved_text)
                 )
             ),

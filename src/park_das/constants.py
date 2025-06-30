@@ -14,7 +14,7 @@ class CarParkNames(Enum):
     P13 = "Parkplatz P13"
     P16 = "Parkplatz P16"
     P18 = "Parkplatz P18"
-    P20 = "Parkhaus Mitte P20"
+    P20 = "PH Mitte P20"
     P22 = "Parkplatz P22"
     P26 = "Parkplatz P26"
     P23 = "Parkplatz P23"
@@ -22,7 +22,7 @@ class CarParkNames(Enum):
     P32 = "Parkplatz P32"
     P41 = "Parkplatz P41"
     P44 = "Parkplatz P44"
-    HE = "Parkhaus Helmholtzstraße"
+    HE = "PH Helmholtzstr."
     M1 = "HNO Klinik M1"
     M2 = "Kliniken Michelsberg M2"
     M3 = "Frauenklinik M3"
@@ -31,15 +31,13 @@ class CarParkNames(Enum):
     def __str__(self) -> str:
         return self.name
 
-    @property
-    def geo_pos(self) -> Location:
-        return CAR_PARK_LOCATIONS[self]
-
     @classmethod
     def parse(cls, value):
         for member in CarParkNames:
             if member.value == value:
                 return member
+            if value == "Parkhaus Mitte P20":
+                return cls.P20
         raise KeyError(f"No matching enum member for '{value}' found.")
 
 CAR_PARK_LOCATIONS = {
@@ -64,39 +62,6 @@ CAR_PARK_LOCATIONS = {
     CarParkNames.M3: Location(9.99374, 48.41076),
     CarParkNames.M4: Location(9.994923, 48.40974)
 }
-
-VISITOR_PARK_LOCATIONS: list[CarParkNames] = [
-    CarParkNames.P10,
-    CarParkNames.P18,
-    CarParkNames.P20,
-    CarParkNames.P22,
-    CarParkNames.P26,
-    CarParkNames.P32,
-    CarParkNames.P44,
-    CarParkNames.M1,
-    CarParkNames.M2,
-    CarParkNames.M3,
-    CarParkNames.M4,
-    CarParkNames.HE
-]
-
-WORKER_PARK_LOCATIONS: list[CarParkNames] = [
-    CarParkNames.P09,
-    CarParkNames.P10,
-    CarParkNames.P11,
-    CarParkNames.P12,
-    CarParkNames.P13,
-    CarParkNames.P16,
-    CarParkNames.P20,
-    CarParkNames.P26,
-    CarParkNames.P23,
-    CarParkNames.P24,
-    CarParkNames.P41,
-    CarParkNames.P44,
-    CarParkNames.M1,
-    CarParkNames.M2,
-    CarParkNames.HE
-]
 
 class SettingsEnum(Enum):
     @classmethod
@@ -145,9 +110,32 @@ class UserLanguage(SettingsEnum):
 
 class UserType(SettingsEnum):
     VISITOR = "settings.usertype.visitor"
-    STUDENT = "settings.usertype.student"
+    WORKER = "settings.usertype.student"
     CITY = "settings.usertype.city"
     UNDEFINED = "settings.undefined"
+
+    @property
+    def live_pos(self) -> Location:
+        """
+        Get an appropriately centered location with proximity alert for user type
+
+        :return: Centered location with proximity radius set
+        """
+        match self:
+            case UserType.CITY:
+                return Location(
+                    9.99268,
+                    48.40973,
+                    proximity_alert_radius=500,
+                    live_period=0x7FFFFFFF
+                )
+            case _:
+                return Location(
+                    9.94540,
+                    48.42341,
+                    proximity_alert_radius=1000,
+                    live_period=0x7FFFFFFF
+                )
 
 class OutputType(SettingsEnum):
     TEXT = "settings.outputtype.text"

@@ -1,12 +1,12 @@
 ﻿import json
 
-from typing import List
+from typing import List, Dict
 from re import search
 
 from crawl4ai import AsyncWebCrawler, JsonCssExtractionStrategy, CrawlerRunConfig, CacheMode
 
-from .constants import CarParkNames, VISITOR_PARK_LOCATIONS, WORKER_PARK_LOCATIONS
-from .models import CarPark
+from .constants import CarParkNames
+from .models import CarPark, UserType
 
 
 VISITOR_URL = "http://tsu-app.rrooaarr.biz/front/index.html"
@@ -80,21 +80,16 @@ config_helmholtz = config.clone(
     extraction_strategy=JsonCssExtractionStrategy(helmholtz_schema)
 )
 
-parking_data: List[CarPark] = []
-
+parking_data: Dict[UserType, List[CarPark]] = {}
 
 async def scrape_data(is_visitor: bool = False, scrape_all: bool = False) -> List[CarPark]:
     """
     Asynchronously fetches parking space data. This is only used for the interval
     updates of the parking spaces. Use `get_data` to retrieve the data.
 
-    Args:
-        is_visitor (bool): If True, fetch data for visitor parking spaces.
-                           If False, fetch data for worker parking spaces.
-        scrape_all (bool): If True, also fetch data for the Helmholtz parking space.
-
-    Returns:
-        List[CarPark]: A list of CarPark objects containing the fetched data.
+    :param is_visitor: Flag that controls if data is fetched for visitors / workers
+    :param scrape_all: Flag that controls whether Helmholtz parking is fetched or not
+    :return: A list of CarPark objects containing the fetched data.
     """
     async with AsyncWebCrawler() as crawler:
         result = await crawler.arun(
@@ -108,21 +103,22 @@ async def scrape_data(is_visitor: bool = False, scrape_all: bool = False) -> Lis
             return data
 
         for item in json.loads(result.extracted_content): # type: ignore
-            name: str = item["name"]
-            numbers: str = item["p_number"]
-            free_spaces: str = item["free_spaces"]
-            total_spaces: str = search(r'\d+', item["total_spaces"]).group() # type: ignore
-
-            if not name or not numbers or not free_spaces:
-                continue
+            name: str = item.get("name", "")
+            numbers: str = item.get("p_number", "")
+            free_spaces: str = item.get("free_spaces", "")
+            total_spaces: str = search(r'\d+', item.get("total_spaces", "")).group() # type: ignore
 
             if name == "" or numbers == "" or free_spaces == "":
                 continue
 
             try:
                 data.append(
-                    CarPark(CarParkNames.parse(f"{name} {numbers}"),
-                            int(free_spaces), int(total_spaces))
+                    CarPark(
+                        CarParkNames.parse(f"{name} {numbers}"),
+                        int(free_spaces),
+                        int(total_spaces),
+                        is_visitor
+                    )
                 )
             except KeyError:
                 print(f"Unknown car park name: {name} {numbers}")
@@ -145,41 +141,39 @@ async def scrape_data(is_visitor: bool = False, scrape_all: bool = False) -> Lis
             return data
 
         data.append(
-            CarPark(CarParkNames.HE,
-                    int(item["free_spaces"]), int(item["total_spaces"]))
+            CarPark(
+                CarParkNames.HE,
+                int(item.get("free_spaces", 0)),
+                int(item.get("total_spaces", 0)),
+                is_visitor
+            )
         )
 
         return data
 
-
 async def fetch_data():
     """
     Updates the global parking_data list with the latest parking space data.
-
-    Returns:
-        List[CarPark]: A list of CarPark objects containing the fetched data.
     """
-    visitor_data = await scrape_data(is_visitor=True, scrape_all=True)
-    worker_data = await scrape_data()
+    data = await scrape_data(is_visitor=True, scrape_all=True)
+    data.extend([p for p in await scrape_data() if p not in data])
 
-    global parking_data
-    parking_data = list({p.code_name: p for p in (visitor_data + worker_data)}.values())
+    for tp in UserType:
+        match tp:
+            case UserType.VISITOR:
+                parking_data[tp] = [p for p in data if p.is_visitor and not p.is_inner_city]
+            case UserType.WORKER:
+                parking_data[tp] = [p for p in data if not p.is_inner_city]
+            case UserType.CITY:
+                parking_data[tp] = [p for p in data if p.is_inner_city]
+            case _:
+                parking_data[tp] = data
 
-
-async def get_data(is_visitor: bool) -> List[CarPark]:
+async def get_data(for_type: UserType) -> List[CarPark]:
     """
     Filters and retrieves parking data based on the type of user.
 
-    Args:
-        is_visitor (bool): If True, retrieves data for visitor parking spaces.
-                           If False, retrieves data for worker parking spaces.
-
-    Returns:
-        List[CarPark]: A list of CarPark objects filtered by the specified user type.
-                       Visitor parking spaces are filtered using `VISITOR_PARK_LOCATIONS`,
-                       while worker parking spaces are filtered using `WORKER_PARK_LOCATIONS`.
+    :param for_type: User type for which to get the parking spot list
+    :return: A list of parking spots for the specified user type
     """
-    if is_visitor:
-        return [p for p in parking_data if p.code_name in VISITOR_PARK_LOCATIONS]
-
-    return [p for p in parking_data if p.code_name in WORKER_PARK_LOCATIONS]
+    return parking_data[for_type]
