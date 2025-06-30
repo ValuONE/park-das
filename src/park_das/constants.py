@@ -36,7 +36,7 @@ class CarParkNames(Enum):
         for member in CarParkNames:
             if member.value == value:
                 return member
-            elif value == "Parkhaus Mitte P20":
+            if value == "Parkhaus Mitte P20":
                 return cls.P20
         raise KeyError(f"No matching enum member for '{value}' found.")
 
