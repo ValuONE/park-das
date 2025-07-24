@@ -41,6 +41,10 @@ class CarParkNames(Enum):
         raise KeyError(f"No matching enum member for '{value}' found.")
 
 class RoomNames(Enum):
+    UNI_WEST = "Universität West"
+    UNI_OST = "Universität Ost"
+    HELMHOLTZSTRASSE = "Helmholtzstraße / Verwaltung"
+    KLINIKEN_MICHELSBERG = "Kliniken Michelsberg"
     O25_H1 = "O25 H1"
     O25_H2 = "O25 H2"
     N25_H3 = "N25 H3"
@@ -59,80 +63,80 @@ class RoomNames(Enum):
     O28_H21 = "O28 H21"
     O28_H22 = "O28 H22"
     M28_H2101_TTU = "M28 H2101 (TTU)"
-    H218_Mikroskopiersaal = "H218 - Mikroskopiersaal"
-    H45_1_Blauer_Hörsaal = "H45.1 - Blauer Hörsaal"
-    H45_2_Gelber_Hörsaal = "H45.2 - Gelber Hörsaal"
-    H47_0_501_Roter_Hörsaal = "H47.0.501 - Roter Hörsaal"
-    Hörsaal_Chirurgie = "Hörsaal Chirurgie"
-    Hörsaal_Innere_Medizin = "Hörsaal Innere Medizin"
-    N23_Seminarraum_2622 = "N23 Seminarraum 2622"
-    N24_Seminarraum_104 = "N24 Seminarraum 104"
-    N24_Seminarraum_131 = "N24 Seminarraum 131"
-    N24_Seminarraum_155 = "N24 Seminarraum 155"
-    N24_Seminarraum_226 = "N24 Seminarraum 226"
-    N24_Seminarraum_227 = "N24 Seminarraum 227"
-    N24_Seminarraum_251 = "N24 Seminarraum 251"
-    N24_Seminarraum_252 = "N24 Seminarraum 252"
-    N24_Seminarraum_254 = "N24 Seminarraum 254"
-    N25_Seminarraum_2101 = "N25 Seminarraum 2101"
-    N25_Seminarraum_2102 = "N25 Seminarraum 2102"
-    N25_Seminarraum_2103 = "N25 Seminarraum 2103"
-    O23_Seminarraum_2609_10 = "O23 Seminarraum 2609/10"
-    O23_Seminarraum_2611 = "O23 Seminarraum 2611"
-    O25_Seminarraum_151 = "O25 Seminarraum 151"
-    O25_Seminarraum_169 = "O25 Seminarraum 169"
-    O25_Seminarraum_346 = "O25 Seminarraum 346"
-    O27_Seminarraum_121 = "O27 Seminarraum 121"
-    O27_Seminarraum_122 = "O27 Seminarraum 122"
-    O27_Seminarraum_123 = "O27 Seminarraum 123"
-    O27_Seminarraum_2201 = "O27 Seminarraum 2201"
-    O27_Seminarraum_2202 = "O27 Seminarraum 2202"
-    O27_Seminarraum_2203 = "O27 Seminarraum 2203"
-    O28_Seminarraum_2001 = "O28 Seminarraum 2001"
-    O28_Seminarraum_2002 = "O28 Seminarraum 2002"
-    O28_Seminarraum_2003 = "O28 Seminarraum 2003"
-    O28_Seminarraum_2004 = "O28 Seminarraum 2004"
-    O29_Seminarraum_1001 = "O29 Seminarraum 1001"
-    O29_Seminarraum_1002 = "O29 Seminarraum 1002"
-    O29_Seminarraum_1003 = "O29 Seminarraum 1003"
-    O29_Seminarraum_2001 = "O29 Seminarraum 2001"
-    O29_Seminarraum_2002 = "O29 Seminarraum 2002"
-    O29_Seminarraum_2003 = "O29 Seminarraum 2003"
-    O29_Seminarraum_2004 = "O29 Seminarraum 2004"
-    O29_Seminarraum_2005 = "O29 Seminarraum 2005"
-    O29_Seminarraum_2006 = "O29 Seminarraum 2006"
-    O29_Seminarraum_3001 = "O29 Seminarraum 3001"
-    O29_Seminarraum_3002 = "O29 Seminarraum 3002"
-    O29_Seminarraum_3003 = "O29 Seminarraum 3003"
-    O29_Seminarraum_3004 = "O29 Seminarraum 3004"
-    SRgeb_Raum_2_AEA_12 = "SRgeb Raum 2, AEA 12"
-    Seminarraum_43_2_101 = "Seminarraum 43.2.101"
-    Seminarraum_43_2_102 = "Seminarraum 43.2.102"
-    Seminarraum_43_2_103 = "Seminarraum 43.2.103"
-    Seminarraum_43_2_104 = "Seminarraum 43.2.104"
-    Seminarraum_45_2_101 = "Seminarraum 45.2.101"
-    Seminarraum_45_2_102 = "Seminarraum 45.2.102"
-    Seminarraum_45_2_103 = "Seminarraum 45.2.103"
-    Seminarraum_47_2_101 = "Seminarraum 47.2.101"
-    Seminarraum_47_2_102 = "Seminarraum 47.2.102"
-    Seminarraum_47_2_104 = "Seminarraum 47.2.104"
-    Seminarraum_47_1_504 = "Seminarraum 47.1.504"
-    Seminarraum_47_1_506 = "Seminarraum 47.1.506"
-    Seminarraum_47_1_507 = "Seminarraum 47.1.507"
-    Seminarraum_47_1_508 = "Seminarraum 47.1.508"
-    Seminarraum_47_2_503 = "Seminarraum 47.2.503"
-    Seminarraum_47_2_505 = "Seminarraum 47.2.505"
-    Seminarraum_47_2_506 = "Seminarraum 47.2.506"
-    Seminarraum_47_2_507 = "Seminarraum 47.2.507"
-    HH_18_Hörsaal_120 = "HH 18 - Hörsaal 120"
-    HH_18_Hörsaal_220 = "HH 18 - Hörsaal 220"
-    HH_18_Hörsaal_E20 = "HH 18 - Hörsaal E20"
-    HH_18_Hörsaal_E60 = "HH 18 - Hörsaal E60"
-    HH_22_Praktikumsraum_1_41 = "HH 22 - Praktikumsraum 1.41"
-    HH_22_Seminarraum_1_42 = "HH 22 - Seminarraum 1.42"
-    HH_22_Seminarraum_E_03 = "HH 22 - Seminarraum E.03"
-    HH_22_Seminarraum_E_04 = "HH 22 - Seminarraum E.04"
-    Hörsaal_E30 = "Hörsaal - E30"
+    H218_MIKROSKOPIERSAAL = "H218 - Mikroskopiersaal"
+    H45_1_BLAUER_HOERSAAL = "H45.1 - Blauer Hörsaal"
+    H45_2_GELBER_HOERSAAL = "H45.2 - Gelber Hörsaal"
+    H47_0_501_ROTER_HOERSAAL = "H47.0.501 - Roter Hörsaal"
+    HOERSAAL_CHIRURGIE = "Hörsaal Chirurgie"
+    HOERSAAL_INNERE_MEDIZIN = "Hörsaal Innere Medizin"
+    N23_SEMINARRAUM_2622 = "N23 Seminarraum 2622"
+    N24_SEMINARRAUM_104 = "N24 Seminarraum 104"
+    N24_SEMINARRAUM_131 = "N24 Seminarraum 131"
+    N24_SEMINARRAUM_155 = "N24 Seminarraum 155"
+    N24_SEMINARRAUM_226 = "N24 Seminarraum 226"
+    N24_SEMINARRAUM_227 = "N24 Seminarraum 227"
+    N24_SEMINARRAUM_251 = "N24 Seminarraum 251"
+    N24_SEMINARRAUM_252 = "N24 Seminarraum 252"
+    N24_SEMINARRAUM_254 = "N24 Seminarraum 254"
+    N25_SEMINARRAUM_2101 = "N25 Seminarraum 2101"
+    N25_SEMINARRAUM_2102 = "N25 Seminarraum 2102"
+    N25_SEMINARRAUM_2103 = "N25 Seminarraum 2103"
+    O23_SEMINARRAUM_2609_10 = "O23 Seminarraum 2609/10"
+    O23_SEMINARRAUM_2611 = "O23 Seminarraum 2611"
+    O25_SEMINARRAUM_151 = "O25 Seminarraum 151"
+    O25_SEMINARRAUM_169 = "O25 Seminarraum 169"
+    O25_SEMINARRAUM_346 = "O25 Seminarraum 346"
+    O27_SEMINARRAUM_121 = "O27 Seminarraum 121"
+    O27_SEMINARRAUM_122 = "O27 Seminarraum 122"
+    O27_SEMINARRAUM_123 = "O27 Seminarraum 123"
+    O27_SEMINARRAUM_2201 = "O27 Seminarraum 2201"
+    O27_SEMINARRAUM_2202 = "O27 Seminarraum 2202"
+    O27_SEMINARRAUM_2203 = "O27 Seminarraum 2203"
+    O28_SEMINARRAUM_2001 = "O28 Seminarraum 2001"
+    O28_SEMINARRAUM_2002 = "O28 Seminarraum 2002"
+    O28_SEMINARRAUM_2003 = "O28 Seminarraum 2003"
+    O28_SEMINARRAUM_2004 = "O28 Seminarraum 2004"
+    O29_SEMINARRAUM_1001 = "O29 Seminarraum 1001"
+    O29_SEMINARRAUM_1002 = "O29 Seminarraum 1002"
+    O29_SEMINARRAUM_1003 = "O29 Seminarraum 1003"
+    O29_SEMINARRAUM_2001 = "O29 Seminarraum 2001"
+    O29_SEMINARRAUM_2002 = "O29 Seminarraum 2002"
+    O29_SEMINARRAUM_2003 = "O29 Seminarraum 2003"
+    O29_SEMINARRAUM_2004 = "O29 Seminarraum 2004"
+    O29_SEMINARRAUM_2005 = "O29 Seminarraum 2005"
+    O29_SEMINARRAUM_2006 = "O29 Seminarraum 2006"
+    O29_SEMINARRAUM_3001 = "O29 Seminarraum 3001"
+    O29_SEMINARRAUM_3002 = "O29 Seminarraum 3002"
+    O29_SEMINARRAUM_3003 = "O29 Seminarraum 3003"
+    O29_SEMINARRAUM_3004 = "O29 Seminarraum 3004"
+    SRGEB_RAUM_2_AEA_12 = "SRgeb Raum 2, AEA 12"
+    SEMINARRAUM_43_2_101 = "Seminarraum 43.2.101"
+    SEMINARRAUM_43_2_102 = "Seminarraum 43.2.102"
+    SEMINARRAUM_43_2_103 = "Seminarraum 43.2.103"
+    SEMINARRAUM_43_2_104 = "Seminarraum 43.2.104"
+    SEMINARRAUM_45_2_101 = "Seminarraum 45.2.101"
+    SEMINARRAUM_45_2_102 = "Seminarraum 45.2.102"
+    SEMINARRAUM_45_2_103 = "Seminarraum 45.2.103"
+    SEMINARRAUM_47_2_101 = "Seminarraum 47.2.101"
+    SEMINARRAUM_47_2_102 = "Seminarraum 47.2.102"
+    SEMINARRAUM_47_2_104 = "Seminarraum 47.2.104"
+    SEMINARRAUM_47_1_504 = "Seminarraum 47.1.504"
+    SEMINARRAUM_47_1_506 = "Seminarraum 47.1.506"
+    SEMINARRAUM_47_1_507 = "Seminarraum 47.1.507"
+    SEMINARRAUM_47_1_508 = "Seminarraum 47.1.508"
+    SEMINARRAUM_47_2_503 = "Seminarraum 47.2.503"
+    SEMINARRAUM_47_2_505 = "Seminarraum 47.2.505"
+    SEMINARRAUM_47_2_506 = "Seminarraum 47.2.506"
+    SEMINARRAUM_47_2_507 = "Seminarraum 47.2.507"
+    HH_18_HOERSAAL_120 = "HH 18 - Hörsaal 120"
+    HH_18_HOERSAAL_220 = "HH 18 - Hörsaal 220"
+    HH_18_HOERSAAL_E20 = "HH 18 - Hörsaal E20"
+    HH_18_HOERSAAL_E60 = "HH 18 - Hörsaal E60"
+    HH_22_PRAKTIKUMSRAUM_1_41 = "HH 22 - Praktikumsraum 1.41"
+    HH_22_SEMINARRAUM_1_42 = "HH 22 - Seminarraum 1.42"
+    HH_22_SEMINARRAUM_E_03 = "HH 22 - Seminarraum E.03"
+    HH_22_SEMINARRAUM_E_04 = "HH 22 - Seminarraum E.04"
+    HOERSAAL_E30 = "Hörsaal - E30"
 
     def __str__(self) -> str:
         return self.name
@@ -168,6 +172,10 @@ CAR_PARK_LOCATIONS = {
 }
 
 ROOM_LOCATIONS = {
+    RoomNames.UNI_OST: Location(9.955421, 48.422561),
+    RoomNames.UNI_WEST: Location(9.946281, 48.420272),
+    RoomNames.HELMHOLTZSTRASSE: Location(9.963221, 48.425570),
+    RoomNames.KLINIKEN_MICHELSBERG: Location(9.992790, 48.409970),
     RoomNames.O25_H1: Location(9.95584, 48.4225),
     RoomNames.O25_H2: Location(9.95565, 48.4226),
     RoomNames.N25_H3: Location(9.95568, 48.42278),
@@ -186,80 +194,80 @@ ROOM_LOCATIONS = {
     RoomNames.O28_H21: Location(9.95778, 48.423),
     RoomNames.O28_H22: Location(9.95801, 48.42306),
     RoomNames.M28_H2101_TTU: Location(9.95662, 48.42437),
-    RoomNames.H218_Mikroskopiersaal: Location(9.95627, 48.42324),
-    RoomNames.H45_1_Blauer_Hörsaal: Location(9.94676, 48.41949),
-    RoomNames.H45_2_Gelber_Hörsaal: Location(9.94632, 48.41974),
-    RoomNames.H47_0_501_Roter_Hörsaal: Location(9.94443, 48.42011),
-    RoomNames.Hörsaal_Chirurgie: Location(9.95301, 48.42243),
-    RoomNames.Hörsaal_Innere_Medizin: Location(9.95365, 48.42185),
-    RoomNames.N23_Seminarraum_2622: Location(9.95383, 48.42216),
-    RoomNames.N24_Seminarraum_104: Location(9.95436, 48.42264),
-    RoomNames.N24_Seminarraum_131: Location(9.95473, 48.42259),
-    RoomNames.N24_Seminarraum_155: Location(9.95431, 48.4224),
-    RoomNames.N24_Seminarraum_226: Location(9.95461, 48.42271),
-    RoomNames.N24_Seminarraum_227: Location(9.95461, 48.42271),
-    RoomNames.N24_Seminarraum_251: Location(9.95465, 48.42236),
-    RoomNames.N24_Seminarraum_252: Location(9.95465, 48.42236),
-    RoomNames.N24_Seminarraum_254: Location(9.95432, 48.42241),
-    RoomNames.N25_Seminarraum_2101: Location(9.95486, 48.42303),
-    RoomNames.N25_Seminarraum_2102: Location(9.95491, 48.42296),
-    RoomNames.N25_Seminarraum_2103: Location(9.95496, 48.42289),
-    RoomNames.O23_Seminarraum_2609_10: Location(9.95398, 48.42195),
-    RoomNames.O23_Seminarraum_2611: Location(9.95406, 48.42187),
-    RoomNames.O25_Seminarraum_151: Location(9.95537, 48.42205),
-    RoomNames.O25_Seminarraum_169: Location(9.95578, 48.42228),
-    RoomNames.O25_Seminarraum_346: Location(9.95518, 48.42258),
-    RoomNames.O27_Seminarraum_121: Location(9.95755, 48.42306),
-    RoomNames.O27_Seminarraum_122: Location(9.95755, 48.42305),
-    RoomNames.O27_Seminarraum_123: Location(9.95764, 48.42296),
-    RoomNames.O27_Seminarraum_2201: Location(9.95745, 48.42301),
-    RoomNames.O27_Seminarraum_2202: Location(9.95755, 48.42305),
-    RoomNames.O27_Seminarraum_2203: Location(9.95761, 48.42295),
-    RoomNames.O28_Seminarraum_2001: Location(9.95779, 48.42311),
-    RoomNames.O28_Seminarraum_2002: Location(9.95779, 48.42311),
-    RoomNames.O28_Seminarraum_2003: Location(9.95792, 48.42316),
-    RoomNames.O28_Seminarraum_2004: Location(9.95792, 48.42316),
-    RoomNames.O29_Seminarraum_1001: Location(9.95778, 48.42329),
-    RoomNames.O29_Seminarraum_1002: Location(9.95778, 48.42329),
-    RoomNames.O29_Seminarraum_1003: Location(9.95778, 48.42329),
-    RoomNames.O29_Seminarraum_2001: Location(9.95778, 48.42329),
-    RoomNames.O29_Seminarraum_2002: Location(9.95778, 48.42329),
-    RoomNames.O29_Seminarraum_2003: Location(9.95778, 48.42329),
-    RoomNames.O29_Seminarraum_2004: Location(9.95778, 48.42329),
-    RoomNames.O29_Seminarraum_2005: Location(9.95778, 48.42329),
-    RoomNames.O29_Seminarraum_2006: Location(9.95778, 48.42329),
-    RoomNames.O29_Seminarraum_3001: Location(9.95778, 48.42329),
-    RoomNames.O29_Seminarraum_3002: Location(9.95778, 48.42329),
-    RoomNames.O29_Seminarraum_3003: Location(9.95778, 48.42329),
-    RoomNames.O29_Seminarraum_3004: Location(9.95778, 48.42329),
-    RoomNames.SRgeb_Raum_2_AEA_12: Location(9.95253, 48.42472),
-    RoomNames.Seminarraum_43_2_101: Location(9.94715, 48.42019),
-    RoomNames.Seminarraum_43_2_102: Location(9.94706, 48.42012),
-    RoomNames.Seminarraum_43_2_103: Location(9.94696, 48.42004),
-    RoomNames.Seminarraum_43_2_104: Location(9.94683, 48.41994),
-    RoomNames.Seminarraum_45_2_101: Location(9.94633, 48.4196),
-    RoomNames.Seminarraum_45_2_102: Location(9.94625, 48.41954),
-    RoomNames.Seminarraum_45_2_103: Location(9.94611, 48.41944),
-    RoomNames.Seminarraum_47_2_101: Location(9.94544, 48.41896),
-    RoomNames.Seminarraum_47_2_102: Location(9.94559, 48.41906),
-    RoomNames.Seminarraum_47_2_104: Location(9.94574, 48.41918),
-    RoomNames.Seminarraum_47_1_504: Location(9.94446, 48.42002),
-    RoomNames.Seminarraum_47_1_506: Location(9.94448, 48.42014),
-    RoomNames.Seminarraum_47_1_507: Location(9.94453, 48.42007),
-    RoomNames.Seminarraum_47_1_508: Location(9.94458, 48.42002),
-    RoomNames.Seminarraum_47_2_503: Location(9.94446, 48.42002),
-    RoomNames.Seminarraum_47_2_505: Location(9.94448, 48.42014),
-    RoomNames.Seminarraum_47_2_506: Location(9.94453, 48.42007),
-    RoomNames.Seminarraum_47_2_507: Location(9.94458, 48.42002),
-    RoomNames.HH_18_Hörsaal_120: Location(9.96351, 48.42532),
-    RoomNames.HH_18_Hörsaal_220: Location(9.96351, 48.42532),
-    RoomNames.HH_18_Hörsaal_E20: Location(9.96351, 48.42532),
-    RoomNames.HH_18_Hörsaal_E60: Location(9.96351, 48.42532),
-    RoomNames.HH_22_Praktikumsraum_1_41: Location(9.96308, 48.42582),
-    RoomNames.HH_22_Seminarraum_1_42: Location(9.96308, 48.42582),
-    RoomNames.HH_22_Seminarraum_E_03: Location(9.96308, 48.42582),
-    RoomNames.HH_22_Seminarraum_E_04: Location(9.96308, 48.42582),
-    RoomNames.Hörsaal_E30: Location(9.99279, 48.40997)
+    RoomNames.H218_MIKROSKOPIERSAAL: Location(9.95627, 48.42324),
+    RoomNames.H45_1_BLAUER_HOERSAAL: Location(9.94676, 48.41949),
+    RoomNames.H45_2_GELBER_HOERSAAL: Location(9.94632, 48.41974),
+    RoomNames.H47_0_501_ROTER_HOERSAAL: Location(9.94443, 48.42011),
+    RoomNames.HOERSAAL_CHIRURGIE: Location(9.95301, 48.42243),
+    RoomNames.HOERSAAL_INNERE_MEDIZIN: Location(9.95365, 48.42185),
+    RoomNames.N23_SEMINARRAUM_2622: Location(9.95383, 48.42216),
+    RoomNames.N24_SEMINARRAUM_104: Location(9.95436, 48.42264),
+    RoomNames.N24_SEMINARRAUM_131: Location(9.95473, 48.42259),
+    RoomNames.N24_SEMINARRAUM_155: Location(9.95431, 48.4224),
+    RoomNames.N24_SEMINARRAUM_226: Location(9.95461, 48.42271),
+    RoomNames.N24_SEMINARRAUM_227: Location(9.95461, 48.42271),
+    RoomNames.N24_SEMINARRAUM_251: Location(9.95465, 48.42236),
+    RoomNames.N24_SEMINARRAUM_252: Location(9.95465, 48.42236),
+    RoomNames.N24_SEMINARRAUM_254: Location(9.95432, 48.42241),
+    RoomNames.N25_SEMINARRAUM_2101: Location(9.95486, 48.42303),
+    RoomNames.N25_SEMINARRAUM_2102: Location(9.95491, 48.42296),
+    RoomNames.N25_SEMINARRAUM_2103: Location(9.95496, 48.42289),
+    RoomNames.O23_SEMINARRAUM_2609_10: Location(9.95398, 48.42195),
+    RoomNames.O23_SEMINARRAUM_2611: Location(9.95406, 48.42187),
+    RoomNames.O25_SEMINARRAUM_151: Location(9.95537, 48.42205),
+    RoomNames.O25_SEMINARRAUM_169: Location(9.95578, 48.42228),
+    RoomNames.O25_SEMINARRAUM_346: Location(9.95518, 48.42258),
+    RoomNames.O27_SEMINARRAUM_121: Location(9.95755, 48.42306),
+    RoomNames.O27_SEMINARRAUM_122: Location(9.95755, 48.42305),
+    RoomNames.O27_SEMINARRAUM_123: Location(9.95764, 48.42296),
+    RoomNames.O27_SEMINARRAUM_2201: Location(9.95745, 48.42301),
+    RoomNames.O27_SEMINARRAUM_2202: Location(9.95755, 48.42305),
+    RoomNames.O27_SEMINARRAUM_2203: Location(9.95761, 48.42295),
+    RoomNames.O28_SEMINARRAUM_2001: Location(9.95779, 48.42311),
+    RoomNames.O28_SEMINARRAUM_2002: Location(9.95779, 48.42311),
+    RoomNames.O28_SEMINARRAUM_2003: Location(9.95792, 48.42316),
+    RoomNames.O28_SEMINARRAUM_2004: Location(9.95792, 48.42316),
+    RoomNames.O29_SEMINARRAUM_1001: Location(9.95778, 48.42329),
+    RoomNames.O29_SEMINARRAUM_1002: Location(9.95778, 48.42329),
+    RoomNames.O29_SEMINARRAUM_1003: Location(9.95778, 48.42329),
+    RoomNames.O29_SEMINARRAUM_2001: Location(9.95778, 48.42329),
+    RoomNames.O29_SEMINARRAUM_2002: Location(9.95778, 48.42329),
+    RoomNames.O29_SEMINARRAUM_2003: Location(9.95778, 48.42329),
+    RoomNames.O29_SEMINARRAUM_2004: Location(9.95778, 48.42329),
+    RoomNames.O29_SEMINARRAUM_2005: Location(9.95778, 48.42329),
+    RoomNames.O29_SEMINARRAUM_2006: Location(9.95778, 48.42329),
+    RoomNames.O29_SEMINARRAUM_3001: Location(9.95778, 48.42329),
+    RoomNames.O29_SEMINARRAUM_3002: Location(9.95778, 48.42329),
+    RoomNames.O29_SEMINARRAUM_3003: Location(9.95778, 48.42329),
+    RoomNames.O29_SEMINARRAUM_3004: Location(9.95778, 48.42329),
+    RoomNames.SRGEB_RAUM_2_AEA_12: Location(9.95253, 48.42472),
+    RoomNames.SEMINARRAUM_43_2_101: Location(9.94715, 48.42019),
+    RoomNames.SEMINARRAUM_43_2_102: Location(9.94706, 48.42012),
+    RoomNames.SEMINARRAUM_43_2_103: Location(9.94696, 48.42004),
+    RoomNames.SEMINARRAUM_43_2_104: Location(9.94683, 48.41994),
+    RoomNames.SEMINARRAUM_45_2_101: Location(9.94633, 48.4196),
+    RoomNames.SEMINARRAUM_45_2_102: Location(9.94625, 48.41954),
+    RoomNames.SEMINARRAUM_45_2_103: Location(9.94611, 48.41944),
+    RoomNames.SEMINARRAUM_47_2_101: Location(9.94544, 48.41896),
+    RoomNames.SEMINARRAUM_47_2_102: Location(9.94559, 48.41906),
+    RoomNames.SEMINARRAUM_47_2_104: Location(9.94574, 48.41918),
+    RoomNames.SEMINARRAUM_47_1_504: Location(9.94446, 48.42002),
+    RoomNames.SEMINARRAUM_47_1_506: Location(9.94448, 48.42014),
+    RoomNames.SEMINARRAUM_47_1_507: Location(9.94453, 48.42007),
+    RoomNames.SEMINARRAUM_47_1_508: Location(9.94458, 48.42002),
+    RoomNames.SEMINARRAUM_47_2_503: Location(9.94446, 48.42002),
+    RoomNames.SEMINARRAUM_47_2_505: Location(9.94448, 48.42014),
+    RoomNames.SEMINARRAUM_47_2_506: Location(9.94453, 48.42007),
+    RoomNames.SEMINARRAUM_47_2_507: Location(9.94458, 48.42002),
+    RoomNames.HH_18_HOERSAAL_120: Location(9.96351, 48.42532),
+    RoomNames.HH_18_HOERSAAL_220: Location(9.96351, 48.42532),
+    RoomNames.HH_18_HOERSAAL_E20: Location(9.96351, 48.42532),
+    RoomNames.HH_18_HOERSAAL_E60: Location(9.96351, 48.42532),
+    RoomNames.HH_22_PRAKTIKUMSRAUM_1_41: Location(9.96308, 48.42582),
+    RoomNames.HH_22_SEMINARRAUM_1_42: Location(9.96308, 48.42582),
+    RoomNames.HH_22_SEMINARRAUM_E_03: Location(9.96308, 48.42582),
+    RoomNames.HH_22_SEMINARRAUM_E_04: Location(9.96308, 48.42582),
+    RoomNames.HOERSAAL_E30: Location(9.99279, 48.40997)
 }
 
 class SettingsEnum(Enum):
