@@ -8,7 +8,8 @@ from telebot.types import Location, User, InlineKeyboardMarkup
 import i18n
 
 from .constants import  CarParkNames, UserLanguage, UserType,\
-                        MapProvider, OutputType, InteractionStates, CAR_PARK_LOCATIONS
+                        MapProvider, OutputType, InteractionStates, CAR_PARK_LOCATIONS,\
+                        RoomNames, ROOM_LOCATIONS
 
 @dataclass
 class CarPark:
@@ -162,6 +163,47 @@ class CarPark:
 
 
 @dataclass
+class RecommendCloseTo:
+    """
+    Represents a location with a name.
+    
+    Attributes:
+        _code_name: The name of the location, based on the RoomNames enum.
+    """
+    _code_name : RoomNames
+
+    def __eq__(self, value: object) -> bool:
+        """
+        Test for equality between locations
+
+        :param value: Other location
+        :return: True if name is same
+        """
+        if isinstance(value, RecommendCloseTo):
+            return self._code_name == value._code_name
+        if isinstance(value, RoomNames):
+            return self._code_name == value
+        return False
+
+    def __str__(self) -> str:
+        """
+        Returns name of location
+
+        :return: Room / building name
+        """
+        return str(self._code_name)
+
+    @property
+    def geo_pos(self) -> Location:
+        """
+        Returns the geographic position (latitude, longitude) of the location.
+
+        :return: A telegram location containing the latitude and longitude of the location.
+        """
+        return ROOM_LOCATIONS[self._code_name]
+
+
+@dataclass
 class BotMessage:
     chat_id : int | None = None
     message_id : int | None = None
@@ -175,7 +217,7 @@ class BotMessage:
 class RecommendationTimer:
     time: str | None = None
     date: str | None = None
-    loc: str | None = None
+    loc: RoomNames = RoomNames.UNDEFINED
 
     @property
     def exists(self) -> bool:
@@ -338,7 +380,7 @@ class UserSettingsManager:
                     inline_buttons=BotMessage(result[5], result[6]),
                     auto_alert=BotMessage(result[7], result[8]),
                     alert_set=bool(result[9]),
-                    timer=RecommendationTimer(result[10], result[11], result[12])
+                    timer=RecommendationTimer(result[10], result[11], RoomNames(result[12]))
                 ) if result is not None else UserSettings()
 
     async def __aenter__(self) -> UserSettings:
@@ -389,7 +431,7 @@ class UserSettingsManager:
                     int(settings.alert_set),
                     settings.timer.time,
                     settings.timer.date,
-                    settings.timer.loc
+                    settings.timer.loc.value
                 )
             )
             await con.commit()

@@ -41,6 +41,7 @@ class CarParkNames(Enum):
         raise KeyError(f"No matching enum member for '{value}' found.")
 
 class RoomNames(Enum):
+    UNDEFINED = "Ohne Ort"
     UNI_WEST = "Universität West"
     UNI_OST = "Universität Ost"
     HELMHOLTZSTRASSE = "Helmholtzstraße / Verwaltung"

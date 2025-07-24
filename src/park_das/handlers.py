@@ -11,7 +11,7 @@ import i18n
 
 from .scrapper import get_data
 from .models import UserSettingsManager, UserSettings, RecommendationTimer
-from .constants import MapProvider, UserType, UserLanguage, OutputType, InteractionStates
+from .constants import MapProvider, UserType, UserLanguage, OutputType, InteractionStates, RoomNames
 from .util import haversine_distance, build_routing_data, static_map
 from .message_analyser import parse_command, BotCommands, parse_time_location
 from .voice_support import transcripe
@@ -456,7 +456,7 @@ async def timing_handler(message: types.Message):
                         ),
                         time=s.timer.time,
                         date=s.timer.date,
-                        loc=s.timer.loc,
+                        loc=s.timer.loc.value,
                         locale=str(s.language)
                     )
                 )
@@ -472,7 +472,7 @@ async def timing_handler(message: types.Message):
             await bot.api.reply_to(message, i18n.t(
                 (
                     "timer.set" if
-                    result.location is None else
+                    result.location == RoomNames.UNDEFINED else
                     "timer.loc_set"
                 ),
                 time=result.time.strftime("%H:%M"),

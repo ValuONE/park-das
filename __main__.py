@@ -39,13 +39,11 @@ async def scheduler():
         await aioschedule.run_pending()
         await asyncio.sleep(1)
 
-
 async def main():
     await bot.setup_bot()
 
     await aioschedule.every(1).minute.do(fetch_data).run()
     await asyncio.gather(bot.api.polling(), scheduler())
-
 
 if __name__ == "__main__":
     asyncio.run(main())

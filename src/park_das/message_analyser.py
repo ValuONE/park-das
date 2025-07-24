@@ -12,6 +12,8 @@ from google.genai import types
 
 import i18n
 
+from .constants import RoomNames
+
 _genai_client = genai.Client(
     api_key=os.environ["GOOGLEMAPS_API_KEY"],
     http_options=types.HttpOptions(api_version='v1beta')
@@ -43,12 +45,12 @@ class _ParsedTimeAndLocation(BaseModel):
         ),
         default=None
     )
-    location: str | None = Field(
+    location: RoomNames = Field(
         description=(
-            "A string that contains a location, such as a building, parking spot,"
-            "or None if the message did not contain location information."
+            "An enum value that describes a known location, such as a building, room"
+            "or RoomNames.UNDEFINED if the message did not contain location information."
         ),
-        default=None
+        default=RoomNames.UNDEFINED
     )
     cancel: bool = Field(
         description=(
@@ -62,7 +64,7 @@ class _ParsedTimeAndLocation(BaseModel):
 @dataclass
 class TimeLocation():
     time: datetime | None = None
-    location: str | None = None
+    location: RoomNames = RoomNames.UNDEFINED
     cancel: bool = False
 
 async def parse_command(user_txt : str | None) -> BotCommands:
@@ -139,7 +141,7 @@ async def parse_time_location(user_txt : str | None) -> TimeLocation:
         The dates and times may appear in various formats, including but not limited to
         'DD/MM', 'DD-MM', 'DD.MM.', and times in 'HH', 'HH:MM' format.
         Also consider common date phrases like 'yesterday', 'today', 'tomorrow' and 'next week',
-        and common time phrases such as 'in 10 minutes', 'in the morning' and 'in about an hour'.
+        and common time phrases such as 'soon', 'in 10 minutes', 'in the morning' and 'in about an hour'.
 
         For each identified date and time, convert it into a standardized format (ISO 8601 format, i.e., 'YYYY-MM-DDTHH:MM:SS').
         If only a date or only a time is provided, use reasonable estimates for the missing information.
@@ -147,9 +149,10 @@ async def parse_time_location(user_txt : str | None) -> TimeLocation:
 
         If there is no time information in the message at all, the timestamp can be None.
 
-        Additionally, you should also extract location information if it is present.
-        The locations could be parking spots, such as "P1", "Parkplatz 20" or "Parkhaus Helmholtzstraße",
-        or buildings and rooms such as "O25", "N24 room 227" or "Lecture hall H20".
+        Additionally, you also extract location information if it is present.
+        The locations could be rooms such as "O25", "N24 room 227" or "Lecture hall H20",
+        or buildings such as "University West", "Administration". If a building or room does
+        not have a corresponding enum entry, use your best judgement to pick a best match.
         If no location information or no time information is present, the location can be None.
 
         If the message signals that the user wants to abort setting a time, the cancel flag should be set.
@@ -157,21 +160,21 @@ async def parse_time_location(user_txt : str | None) -> TimeLocation:
         Here are some examples of the expected output ("message": "timestamp", "location", "cancel"):
 
         "I will be on campus in half an hour":
-            "2025-06-16T10:26:00", "Campus", "False" (assuming it is 2025-06-16T09:56:00)
+            "2025-06-16T10:26:00", "RoomNames.UNI_OST", "False" (assuming it is 2025-06-16T09:56:00)
         "I need a parking spot near H20 tomorrow morning":
-            "2025-06-15T09:00:00", "H20", "False" (assuming it is 2025-06-14T17:30:00)
+            "2025-06-15T09:00:00", "RoomNames.O27_H20", "False" (assuming it is 2025-06-14T17:30:00)
         "Send me recommendations when I arrive at ten":
-            "2025-06-13T10:00:00", "None", "False" (assuming it is 2025-06-13T08:30:00)
+            "2025-06-13T10:00:00", "RoomNames.UNDEFINED", "False" (assuming it is 2025-06-13T08:30:00)
         "I should arrive in 15 minutes":
-            "2025-06-10T07:57:00", "None", "False" (assuming it is 2025-06-10T07:42:00)
+            "2025-06-10T07:57:00", "RoomNames.UNDEFINED", "False" (assuming it is 2025-06-10T07:42:00)
         "I need a parking spot for my exercise in 2103 in 20 minutes":
-            "2025-06-08T14:24:00", "2103", "False" (assuming it is 2025-06-08T14:04:00)
+            "2025-06-08T14:24:00", "RoomNames.N25_SEMINARRAUM_2103", "False" (assuming it is 2025-06-08T14:04:00)
         "What's the wheater like in Ulm":
-            "None", "None", "False"
+            "None", "RoomNames.UNDEFINED", "False"
         "Remove the timer":
-            "None", "None", "True"
+            "None", "RoomNames.UNDEFINED", "True"
         "I do not want to be sent a recommendation":
-            "None", "None", "True"
+            "None", "RoomNames.UNDEFINED", "True"
         """,
         response_mime_type="application/json",
         response_schema=_ParsedTimeAndLocation,
@@ -194,17 +197,18 @@ async def parse_time_location(user_txt : str | None) -> TimeLocation:
     if parsed.time_estimate is not None:
         return TimeLocation(
             dateparser.parse(parsed.time_estimate, languages=i18n.get("available_locales")),
-            None if parsed.location == "None" else parsed.location,
+            parsed.location,
             parsed.cancel
         )
 
-    return TimeLocation(None, None, parsed.cancel)
+    return TimeLocation(None, RoomNames.UNDEFINED, parsed.cancel)
 
 async def test():
     test_sentences = [
         "Ich werde um 11:30 in Ulm sein",
         "Ich suche nach einem Parkplatz in der Nähe von O27 und bin in 10 Minuten dort.",
         "Am kommenden Dienstag brauche ich einen Parkplatz am Mittag",
+        "Ich brauche in einer halben Stunde einen Parkplatz am Campus",
         "Wo ist der nächste freie Parkplatz?",
         "Wie ist die aktuelle Parksituation?",
         "Wie kannst du mir helfen?",
@@ -214,3 +218,7 @@ async def test():
     for t in test_sentences:
         dt = await parse_time_location(t)
         print(dt)
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(test())
