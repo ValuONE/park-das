@@ -477,7 +477,7 @@ async def timing_handler(message: types.Message):
                 ),
                 time=result.time.strftime("%H:%M"),
                 date=result.time.strftime("%-d.%-m."),
-                loc=result.location,
+                loc=result.location.value,
                 locale=str(s.language)
             ))
 
