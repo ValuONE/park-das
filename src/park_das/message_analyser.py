@@ -201,7 +201,7 @@ async def parse_time_location(user_txt : str | None) -> TimeLocation:
             parsed.cancel
         )
 
-    return TimeLocation(None, RoomNames.UNDEFINED, parsed.cancel)
+    return TimeLocation(None, parsed.location, parsed.cancel)
 
 async def test():
     test_sentences = [
