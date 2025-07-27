@@ -440,6 +440,9 @@ disable=raw-checker-failed,
         use-symbolic-message-instead,
         C0114, C0115, C0116,
         E0401,
+        R0912,
+        E1123,
+        W0718,
         W0603 # Allow global keyword
 
 # Enable the message, report, category or checker with the given id(s). You can

@@ -6,10 +6,10 @@ from aiohttp import request
 
 from telebot import types, util, formatting
 
-from .models import UserSettingsManager, UserSettings, RecommendationTimer, BotMessage
-
 import aioschedule
 import i18n
+
+from .models import BotMessage
 
 from .scrapper import get_data
 from .models import UserSettingsManager, UserSettings, RecommendationTimer
@@ -104,13 +104,14 @@ async def handle_settings_callback(cb: types.CallbackQuery):
         if data.startswith("{") and data.endswith("}"):
             try:
                 update = loads(data)
-            except Exception:
+            except ValueError:
                 return await api.answer_callback_query(cb.id, "Ungültige Daten!", show_alert=True)
 
             old_output = s.output_type
 
             if UserLanguage.__name__ in update:
-                s.language = UserLanguage(update[UserLanguage.__name__]); lang = str(s.language)
+                s.language = UserLanguage(update[UserLanguage.__name__])
+                lang = str(s.language)
             if MapProvider.__name__ in update:
                 s.map_provider = MapProvider(update[MapProvider.__name__])
             if UserType.__name__ in update:
@@ -120,14 +121,23 @@ async def handle_settings_callback(cb: types.CallbackQuery):
 
             # OutputType-Wechsel speziell behandeln
             if old_output != s.output_type:
+
                 # alte Settings-Message weg
-                try: await api.delete_message(msg.chat.id, msg.message_id)
-                except Exception: pass
+                try:
+                    await api.delete_message(msg.chat.id, msg.message_id)
+
+                # pylint: disable=bare-except
+                except Exception:
+                    pass
 
                 # ggf. alte Voice-Vorschau löschen
                 if getattr(s, "settings_voice_id", None):
-                    try: await api.delete_message(msg.chat.id, s.settings_voice_id)
-                    except Exception: pass
+                    try:
+                        await api.delete_message(msg.chat.id, s.settings_voice_id)
+
+                    # pylint: disable=bare-except
+                    except Exception:
+                        pass
                     s.settings_voice_id = None
 
                 if s.output_type == OutputType.VOICE:
