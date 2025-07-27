@@ -75,18 +75,30 @@ async def help_handler(message: types.Message):
     )
 )
 async def handle_settings_callback(cb: types.CallbackQuery):
+    """
+    Handles callback queries from the settings menu.
+
+    This function processes user interactions with the settings menu, allowing them to:
+    - Navigate between different settings categories (e.g., language, map provider).
+    - Update specific settings by selecting options.
+    - Handle fallback cases for unknown callbacks.
+
+    Args:
+        cb (types.CallbackQuery): The callback query object containing user interaction data.
+    """
     async with UserSettingsManager(cb.from_user.id) as s:
         lang = str(s.language)
         api = bot.api
         msg = cb.message
         data = cb.data or ""
 
-        # Nur reagieren, wenn es unsere Settings-Message ist
+        # Only respond if the callback is related to the settings message
         if not s.inline_buttons.exists or msg.message_id != s.inline_buttons.message_id:
             return await api.answer_callback_query(cb.id)
 
-        # --- 1) Menü-Buttons ---
+        # --- 1) Menu Buttons ---
         if data in ("user_language", "map_provider", "user_type", "output_type", "back"):
+            # Map button data to corresponding markup functions
             markup_map = {
                 "user_language": UserLanguage.markup_buttons,
                 "map_provider":  MapProvider.markup_buttons,
@@ -94,21 +106,25 @@ async def handle_settings_callback(cb: types.CallbackQuery):
                 "output_type":   OutputType.markup_buttons,
                 "back":          UserSettings.markup_buttons,
             }
+            # Update the reply markup with the selected menu
             await api.edit_message_reply_markup(
                 msg.chat.id, msg.message_id,
                 reply_markup=markup_map[data](lang)
             )
             return await api.answer_callback_query(cb.id)
 
-        # --- 2) JSON-Buttons (Wert setzen) ---
+        # --- 2) JSON Buttons (Set Values) ---
         if data.startswith("{") and data.endswith("}"):
             try:
+                # Parse the JSON data from the callback
                 update = loads(data)
             except ValueError:
+                # Handle invalid JSON data
                 return await api.answer_callback_query(cb.id, "Ungültige Daten!", show_alert=True)
 
             old_output = s.output_type
 
+            # Update user settings based on the parsed JSON data
             if UserLanguage.__name__ in update:
                 s.language = UserLanguage(update[UserLanguage.__name__])
                 lang = str(s.language)
@@ -119,27 +135,24 @@ async def handle_settings_callback(cb: types.CallbackQuery):
             if OutputType.__name__ in update:
                 s.output_type = OutputType(update[OutputType.__name__])
 
-            # OutputType-Wechsel speziell behandeln
+            # Handle special case for OutputType change
             if old_output != s.output_type:
 
-                # alte Settings-Message weg
+                # Delete the old settings message
                 try:
                     await api.delete_message(msg.chat.id, msg.message_id)
-
-                # pylint: disable=bare-except
                 except Exception:
-                    pass
+                    pass  # Ignore errors during deletion
 
-                # ggf. alte Voice-Vorschau löschen
+                # Delete old voice preview if it exists
                 if getattr(s, "settings_voice_id", None):
                     try:
                         await api.delete_message(msg.chat.id, s.settings_voice_id)
-
-                    # pylint: disable=bare-except
                     except Exception:
-                        pass
+                        pass  # Ignore errors during deletion
                     s.settings_voice_id = None
 
+                # Send a new message based on the updated OutputType
                 if s.output_type == OutputType.VOICE:
                     new_msg = await api.send_message(
                         msg.chat.id,
@@ -155,10 +168,11 @@ async def handle_settings_callback(cb: types.CallbackQuery):
                         reply_markup=UserSettings.markup_buttons(lang)
                     )
 
+                # Update the inline buttons reference
                 s.inline_buttons = BotMessage(new_msg.chat.id, new_msg.message_id)
                 return await api.answer_callback_query(cb.id)
 
-            # Kein Wechsel → Text & Buttons einfach editieren
+            # If no OutputType change, simply edit the text and buttons
             await api.edit_message_text(
                 str(s),
                 msg.chat.id,
@@ -169,6 +183,7 @@ async def handle_settings_callback(cb: types.CallbackQuery):
             return await api.answer_callback_query(cb.id)
 
         # --- 3) Fallback ---
+        # Handle unknown callback data
         return await api.answer_callback_query(cb.id, "Unbekannter Callback", show_alert=True)
 
 @bot.api.message_handler(commands=["settings"])
