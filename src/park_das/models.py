@@ -197,6 +197,7 @@ class UserSettings:
     auto_alert: BotMessage = BotMessage()
     alert_set: bool = False
     timer: RecommendationTimer = RecommendationTimer()
+    settings_voice_id: int | None = None
 
     def __str__(self) -> str:
         lang = str(self.language)
@@ -300,7 +301,8 @@ class UserSettingsManager:
                     alert_set INTEGER,
                     timer_time TEXT,
                     timer_date TEXT,
-                    timer_loc TEXT
+                    timer_loc TEXT,
+                    settings_voice_id INTEGER
                 )
                 """
             )
@@ -320,7 +322,8 @@ class UserSettingsManager:
                     alert_set,
                     timer_time,
                     timer_date,
-                    timer_loc
+                    timer_loc,
+                    settings_voice_id
                 FROM settings
                 WHERE user_id = ?
                 """,
@@ -338,7 +341,8 @@ class UserSettingsManager:
                     inline_buttons=BotMessage(result[5], result[6]),
                     auto_alert=BotMessage(result[7], result[8]),
                     alert_set=bool(result[9]),
-                    timer=RecommendationTimer(result[10], result[11], result[12])
+                    timer=RecommendationTimer(result[10], result[11], result[12]),
+                    settings_voice_id = result[13]
                 ) if result is not None else UserSettings()
 
     async def __aenter__(self) -> UserSettings:
@@ -372,8 +376,9 @@ class UserSettingsManager:
                     alert_set,
                     timer_time,
                     timer_date,
-                    timer_loc
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    timer_loc,
+                    settings_voice_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     self._user,
@@ -389,7 +394,8 @@ class UserSettingsManager:
                     int(settings.alert_set),
                     settings.timer.time,
                     settings.timer.date,
-                    settings.timer.loc
+                    settings.timer.loc,
+                    settings.settings_voice_id
                 )
             )
             await con.commit()
