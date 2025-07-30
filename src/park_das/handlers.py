@@ -9,6 +9,8 @@ from telebot import types, util, formatting
 import aioschedule
 import i18n
 
+from .models import BotMessage
+
 from .scrapper import get_data
 from .models import UserSettingsManager, UserSettings, RecommendationTimer
 from .constants import MapProvider, UserType, UserLanguage, OutputType, InteractionStates, RoomNames
@@ -66,6 +68,123 @@ async def help_handler(message: types.Message):
                 parse_mode="Markdown"
             )
 
+@bot.api.callback_query_handler(
+    func=lambda cb: cb.data and (
+        cb.data in {"user_language", "map_provider", "user_type", "output_type", "back"}
+        or (cb.data.startswith("{") and cb.data.endswith("}"))
+    )
+)
+async def handle_settings_callback(cb: types.CallbackQuery):
+    """
+    Handles callback queries from the settings menu.
+
+    This function processes user interactions with the settings menu, allowing them to:
+    - Navigate between different settings categories (e.g., language, map provider).
+    - Update specific settings by selecting options.
+    - Handle fallback cases for unknown callbacks.
+
+    Args:
+        cb (types.CallbackQuery): The callback query object containing user interaction data.
+    """
+    async with UserSettingsManager(cb.from_user.id) as s:
+        lang = str(s.language)
+        api = bot.api
+        msg = cb.message
+        data = cb.data or ""
+
+        # Only respond if the callback is related to the settings message
+        if not s.inline_buttons.exists or msg.message_id != s.inline_buttons.message_id:
+            return await api.answer_callback_query(cb.id)
+
+        # --- 1) Menu Buttons ---
+        if data in ("user_language", "map_provider", "user_type", "output_type", "back"):
+            # Map button data to corresponding markup functions
+            markup_map = {
+                "user_language": UserLanguage.markup_buttons,
+                "map_provider":  MapProvider.markup_buttons,
+                "user_type":     UserType.markup_buttons,
+                "output_type":   OutputType.markup_buttons,
+                "back":          UserSettings.markup_buttons,
+            }
+            # Update the reply markup with the selected menu
+            await api.edit_message_reply_markup(
+                msg.chat.id, msg.message_id,
+                reply_markup=markup_map[data](lang)
+            )
+            return await api.answer_callback_query(cb.id)
+
+        # --- 2) JSON Buttons (Set Values) ---
+        if data.startswith("{") and data.endswith("}"):
+            try:
+                # Parse the JSON data from the callback
+                update = loads(data)
+            except ValueError:
+                # Handle invalid JSON data
+                return await api.answer_callback_query(cb.id, "Ungültige Daten!", show_alert=True)
+
+            old_output = s.output_type
+
+            # Update user settings based on the parsed JSON data
+            if UserLanguage.__name__ in update:
+                s.language = UserLanguage(update[UserLanguage.__name__])
+                lang = str(s.language)
+            if MapProvider.__name__ in update:
+                s.map_provider = MapProvider(update[MapProvider.__name__])
+            if UserType.__name__ in update:
+                s.user_type = UserType(update[UserType.__name__])
+            if OutputType.__name__ in update:
+                s.output_type = OutputType(update[OutputType.__name__])
+
+            # Handle special case for OutputType change
+            if old_output != s.output_type:
+
+                # Delete the old settings message
+                try:
+                    await api.delete_message(msg.chat.id, msg.message_id)
+                except Exception:
+                    pass  # Ignore errors during deletion
+
+                # Delete old voice preview if it exists
+                if getattr(s, "settings_voice_id", None):
+                    try:
+                        await api.delete_message(msg.chat.id, s.settings_voice_id)
+                    except Exception:
+                        pass  # Ignore errors during deletion
+                    s.settings_voice_id = None
+
+                # Send a new message based on the updated OutputType
+                if s.output_type == OutputType.VOICE:
+                    new_msg = await api.send_message(
+                        msg.chat.id,
+                        str(s),
+                        reply_markup=UserSettings.markup_buttons(lang),
+                        voice_only=True
+                    )
+                    s.settings_voice_id = new_msg.message_id
+                else:
+                    new_msg = await api.send_message(
+                        msg.chat.id,
+                        str(s),
+                        reply_markup=UserSettings.markup_buttons(lang)
+                    )
+
+                # Update the inline buttons reference
+                s.inline_buttons = BotMessage(new_msg.chat.id, new_msg.message_id)
+                return await api.answer_callback_query(cb.id)
+
+            # If no OutputType change, simply edit the text and buttons
+            await api.edit_message_text(
+                str(s),
+                msg.chat.id,
+                msg.message_id,
+                reply_markup=UserSettings.markup_buttons(lang),
+                parse_mode="Markdown"
+            )
+            return await api.answer_callback_query(cb.id)
+
+        # --- 3) Fallback ---
+        # Handle unknown callback data
+        return await api.answer_callback_query(cb.id, "Unbekannter Callback", show_alert=True)
 
 @bot.api.message_handler(commands=["settings"])
 async def settings_handler(message: types.Message):
@@ -83,61 +202,6 @@ async def settings_handler(message: types.Message):
             )
 
             await bot.update_inline_buttons(message.from_user, sent)
-
-            @bot.api.callback_query_handler(lambda cb : cb.message.message_id == sent.message_id)
-            async def handle_settings_callback(cb : types.CallbackQuery):
-                lang = str(s.language)
-                match(cb.data):
-                    case "user_language":
-                        await api.edit_message_reply_markup(
-                            sent.chat.id,
-                            sent.message_id,
-                            reply_markup=UserLanguage.markup_buttons(lang)
-                        )
-                    case "map_provider":
-                        await api.edit_message_reply_markup(
-                            sent.chat.id,
-                            sent.message_id,
-                            reply_markup=MapProvider.markup_buttons(lang)
-                        )
-                    case "user_type":
-                        await api.edit_message_reply_markup(
-                            sent.chat.id,
-                            sent.message_id,
-                            reply_markup=UserType.markup_buttons(lang)
-                        )
-                    case "output_type":
-                        await api.edit_message_reply_markup(
-                            sent.chat.id,
-                            sent.message_id,
-                            reply_markup=OutputType.markup_buttons(lang)
-                        )
-                    case "back":
-                        await api.edit_message_reply_markup(
-                            sent.chat.id,
-                            sent.message_id,
-                            reply_markup=UserSettings.markup_buttons(lang)
-                        )
-                    case _:
-                        update = loads(cb.data if cb.data else "")
-                        s.language = UserLanguage(update[UserLanguage.__name__]) if \
-                            UserLanguage.__name__ in update else s.language
-                        s.map_provider = MapProvider(update[MapProvider.__name__]) if \
-                            MapProvider.__name__ in update else s.map_provider
-                        s.user_type = UserType(update[UserType.__name__]) if \
-                            UserType.__name__ in update else s.user_type
-                        s.output_type = OutputType(update[OutputType.__name__]) if \
-                            OutputType.__name__ in update else s.output_type
-                        lang = str(s.language)
-
-                        await api.edit_message_text(
-                            str(s),
-                            sent.chat.id,
-                            sent.message_id,
-                            reply_markup=UserSettings.markup_buttons(lang)
-                        )
-
-                await api.answer_callback_query(cb.id)
 
 
 @bot.api.message_handler(commands=["automatic"])

@@ -1,22 +1,27 @@
 """
-support for the park-das Telegram bot.
+Voice support module for the park-das Telegram bot.
 
-Converts incoming voice messages into text using Whisper and forwards
-them to the existing free_text_handler, so that the already
-implemented command logic for text messages is used unchanged.
+This module provides functionality to convert incoming voice messages into text
+using the Whisper speech recognition model. It processes voice messages and forwards
+the transcribed text to the existing free_text_handler, allowing users to interact
+with the bot using voice commands instead of typing.
 
-All previous keyword routing functions have been removed - this module only performs speech-to-text.
+The module implements:
+- Lazy initialization of the Whisper model to optimize startup time
+- Asynchronous audio conversion from OGG (Telegram format) to WAV
+- Speech-to-text transcription via Whisper AI
+
+Note: All previous keyword routing functions have been removed as this module
+only performs speech-to-text conversion.
 """
 
 import os
 import asyncio
 import logging
 import tempfile
-
 from pathlib import Path
 
 import whisper
-
 from telebot import types
 
 from .bot import bot
@@ -24,18 +29,28 @@ from .bot import bot
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Whisper‑Initialization
+# Whisper Initialization
 # ---------------------------------------------------------------------------
 
+# Model size can be configured via environment variable or defaults to 'tiny'
+# Available sizes: tiny, base, small, medium, large
 _MODEL_SIZE = os.getenv("WHISPER_MODEL_SIZE", "tiny")
+
+# The model is initialized lazily on first use to prevent long startup times
 _whisper_model: whisper.Whisper | None = None
 
 def _whisper() -> whisper.Whisper:
-    """Lazy‑load of the Whisper-Model to prevent long startup times."""
+    """
+    Lazily loads the Whisper model to prevent long startup times.
 
+    The function ensures the model is only loaded once and then reused for subsequent calls.
+    The model size is determined by the WHISPER_MODEL_SIZE environment variable.
+
+    :return: Initialized Whisper model instance
+    """
     global _whisper_model  # pylint: disable=global-statement
     if _whisper_model is None:
-        logger.info("Lade Whisper‑Modell '%s'…", _MODEL_SIZE)
+        logger.info("Loading Whisper model '%s'...", _MODEL_SIZE)
         _whisper_model = whisper.load_model(_MODEL_SIZE)
     return _whisper_model
 
@@ -45,10 +60,20 @@ def _whisper() -> whisper.Whisper:
 # ---------------------------------------------------------------------------
 
 async def _ogg_to_wav(ogg_path: str) -> str:
-    """OGG-file asynchronously to WAVE using ffmpeg."""
+    """
+    Converts an OGG audio file to WAV format asynchronously using ffmpeg.
 
+    Telegram voice messages are in OGG format, but Whisper requires WAV.
+    This function handles the conversion by running ffmpeg in a separate process.
+
+    :param ogg_path: Path to the source OGG file
+    :return: Path to the converted WAV file
+    """
     loop = asyncio.get_running_loop()
     wav_path = Path(tempfile.NamedTemporaryFile(suffix=".wav", delete=False).name)
+
+    # Run ffmpeg in a separate thread to avoid blocking the event loop
+    # Convert to 16kHz mono WAV format which works best with Whisper
     await loop.run_in_executor(
         None,
         lambda: os.system(
@@ -60,42 +85,54 @@ async def _ogg_to_wav(ogg_path: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Haupt‑Handler
+# Main Handler
 # ---------------------------------------------------------------------------
 
 async def transcripe(message: types.Message) -> str | None:
-    """Process incoming voice messages."""
+    """
+    Processes incoming voice messages and transcribes them to text.
 
-    # Download the voice message
+    This function:
+    1. Downloads the voice message from Telegram
+    2. Saves it as a temporary OGG file
+    3. Converts it to WAV format
+    4. Transcribes the audio using Whisper
+    5. Cleans up temporary files
+
+    :param message: Telegram message object containing a voice message
+    :return: Transcribed text or None if transcription failed
+    """
+    # Download the voice message from Telegram servers
     async with bot as api:
-        file_info = await api.get_file(message.voice.file_id) # type: ignore
+        file_info = await api.get_file(message.voice.file_id)  # type: ignore
         ogg_bytes = await api.download_file(file_info.file_path)
 
+    # Save the downloaded bytes to a temporary OGG file
     with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as tmp:
         tmp.write(ogg_bytes)
         ogg_path = tmp.name
 
-    # Convert OGG to WAV
+    # Convert OGG to WAV format and clean up the OGG file
     try:
         wav_path = await _ogg_to_wav(ogg_path)
     finally:
-        Path(ogg_path).unlink(missing_ok=True)
+        Path(ogg_path).unlink(missing_ok=True)  # Delete temporary OGG file
 
-    # Transcribe (blocking -> thread pool)
+    # Run transcription in a thread pool to avoid blocking the event loop
+    # Whisper operations are CPU-intensive and can take some time
     loop = asyncio.get_running_loop()
     try:
         result = await loop.run_in_executor(
             None,
             lambda: _whisper().transcribe(
                 wav_path,
-                language=None,
-                fp16=False
+                language=None,  # Automatic language detection
+                fp16=False      # Don't use float16 precision (more compatible)
             )
         )
-        return result.get("text", "").strip() # type: ignore
-
-    except Exception: # pylint: disable=broad-exception-caught
+        return result.get("text", "").strip()  # type: ignore
+    except Exception:  # pylint: disable=broad-exception-caught
         logger.exception("Transcription failed")
         return None
     finally:
-        Path(wav_path).unlink(missing_ok=True)
+        Path(wav_path).unlink(missing_ok=True)  # Delete temporary WAV file
