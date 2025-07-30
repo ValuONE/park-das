@@ -94,7 +94,7 @@ async def handle_settings_callback(cb: types.CallbackQuery):
 
             match data.get("type"):
                 case Callbacks.MAP_PROVIDER_ERROR:
-                    return await api.answer_callback_query(
+                    await api.answer_callback_query(
                         cb.id,
                         formatting.format_text(
                             i18n.t("error.mapprovider_not_set", lang)
@@ -115,8 +115,9 @@ async def handle_settings_callback(cb: types.CallbackQuery):
                         cb.message.message_id,
                         reply_markup=selected.value.markup_buttons(lang)
                     )
-                    return await api.answer_callback_query(cb.id)
+                    await api.answer_callback_query(cb.id)
                 case Callbacks.SETTINGS_UPDATE:
+                    old_output = s.output_type
                     # Update user settings based on the parsed JSON data
                     if UserLanguage.__name__ in data:
                         s.language = UserLanguage(data[UserLanguage.__name__])
@@ -126,34 +127,33 @@ async def handle_settings_callback(cb: types.CallbackQuery):
                     if UserType.__name__ in data:
                         s.user_type = UserType(data[UserType.__name__])
                     if OutputType.__name__ in data:
-                        old_output = s.output_type
                         s.output_type = OutputType(data[OutputType.__name__])
 
-                        # Handle special case for OutputType change
-                        if old_output != s.output_type:
-                            # Send a new message based on the updated OutputType
-                            sent = await api.send_message(
-                                cb.message.chat.id,
-                                str(s),
-                                reply_markup=UserData.markup_buttons(lang),
-                                voice_only=s.output_type==OutputType.VOICE # type: ignore
-                            )
+                    # Handle special case for OutputType change
+                    if old_output != s.output_type:
+                        # Send a new message based on the updated OutputType
+                        sent = await api.send_message(
+                            cb.message.chat.id,
+                            str(s),
+                            reply_markup=UserData.markup_buttons(lang),
+                            voice_only=s.output_type==OutputType.VOICE # type: ignore
+                        )
 
-                            # Update the inline buttons reference
-                            await bot.update_inline_buttons(cb.from_user, sent)
-                            return await api.answer_callback_query(cb.id)
-
-                    # If no OutputType change, simply edit the text and buttons
-                    await api.edit_message_text(
-                        str(s),
-                        cb.message.chat.id,
-                        cb.message.message_id,
-                        reply_markup=UserData.markup_buttons(lang),
-                        parse_mode="Markdown"
-                    )
-                    return await api.answer_callback_query(cb.id)
+                        # Update the inline buttons reference
+                        await bot.update_inline_buttons(cb.from_user, sent)
+                        await api.answer_callback_query(cb.id)
+                    else:
+                        # If no OutputType change, simply edit the text and buttons
+                        await api.edit_message_text(
+                            str(s),
+                            cb.message.chat.id,
+                            cb.message.message_id,
+                            reply_markup=UserData.markup_buttons(lang),
+                            parse_mode="Markdown"
+                        )
+                        await api.answer_callback_query(cb.id)
                 case _:
-                    return await api.answer_callback_query(
+                    await api.answer_callback_query(
                         cb.id,
                         i18n.t("error.callback", lang),
                         show_alert=True
