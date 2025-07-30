@@ -5,7 +5,7 @@ from telebot import types, formatting
 
 import i18n
 
-from .models import UserSettingsManager, BotMessage
+from .models import UserManager, BotMessage
 
 class ParkBot:
 
@@ -83,7 +83,7 @@ class ParkBot:
         :param user: User the message was sent to
         :param sent: Message containing inline buttons
         """
-        async with UserSettingsManager(user) as s:
+        async with UserManager(user) as s:
             if s.inline_buttons.exists:
                 try:
                     await self.api.delete_message(
@@ -126,7 +126,7 @@ class ParkBot:
         :param location: Location of the bot or None if it should be removed
         :param chat_id: Chat the location belongs to
         """
-        async with UserSettingsManager(user) as s:
+        async with UserManager(user) as s:
             if location is not None:
                 if s.auto_alert.exists:
                     try:

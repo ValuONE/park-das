@@ -9,12 +9,11 @@ from telebot import types, util, formatting
 import aioschedule
 import i18n
 
-from .models import BotMessage
-
 from .scrapper import get_data
-from .models import UserSettingsManager, UserSettings, RecommendationTimer
-from .constants import MapProvider, UserType, UserLanguage, OutputType, InteractionStates, RoomNames
-from .util import haversine_distance, build_routing_data, static_map
+from .models import UserManager, UserData, RecommendationTimer
+from .constants import  MapProvider, UserType, UserLanguage, OutputType, \
+                        InteractionStates, RoomNames, Callbacks, Settings
+from .util import haversine_distance, build_routing_data, static_map, check_json
 from .message_analyser import parse_command, BotCommands, parse_time_location
 from .voice_support import transcripe
 
@@ -27,7 +26,7 @@ async def start_handler(message: types.Message):
     Creates user settings for new users, sends help message.
     """
     async with bot as api:
-        async with UserSettingsManager(message.from_user) as s:
+        async with UserManager(message.from_user) as s:
             # Create default settings if new user
             if s.user_type == UserType.UNDEFINED:
                 s.language = UserLanguage.DE
@@ -60,7 +59,7 @@ async def help_handler(message: types.Message):
     Sends a message containing available commands.
     """
     async with bot as api:
-        async with UserSettingsManager(message.from_user) as s:
+        async with UserManager(message.from_user) as s:
             s.bot_state = InteractionStates.IDLE
             await api.send_message(
                 message.chat.id,
@@ -68,15 +67,13 @@ async def help_handler(message: types.Message):
                 parse_mode="Markdown"
             )
 
+
 @bot.api.callback_query_handler(
-    func=lambda cb: cb.data and (
-        cb.data in {"user_language", "map_provider", "user_type", "output_type", "back"}
-        or (cb.data.startswith("{") and cb.data.endswith("}"))
-    )
+    func=lambda cb: cb.data is not None and check_json(cb.data)
 )
 async def handle_settings_callback(cb: types.CallbackQuery):
     """
-    Handles callback queries from the settings menu.
+    Handles callback queries that contain callback data.
 
     This function processes user interactions with the settings menu, allowing them to:
     - Navigate between different settings categories (e.g., language, map provider).
@@ -86,105 +83,82 @@ async def handle_settings_callback(cb: types.CallbackQuery):
     Args:
         cb (types.CallbackQuery): The callback query object containing user interaction data.
     """
-    async with UserSettingsManager(cb.from_user.id) as s:
-        lang = str(s.language)
-        api = bot.api
-        msg = cb.message
-        data = cb.data or ""
+    async with bot as api:
+        async with UserManager(cb.from_user.id) as s:
+            lang = str(s.language)
+            data : dict = loads(cb.data) # type: ignore
 
-        # Only respond if the callback is related to the settings message
-        if not s.inline_buttons.exists or msg.message_id != s.inline_buttons.message_id:
-            return await api.answer_callback_query(cb.id)
-
-        # --- 1) Menu Buttons ---
-        if data in ("user_language", "map_provider", "user_type", "output_type", "back"):
-            # Map button data to corresponding markup functions
-            markup_map = {
-                "user_language": UserLanguage.markup_buttons,
-                "map_provider":  MapProvider.markup_buttons,
-                "user_type":     UserType.markup_buttons,
-                "output_type":   OutputType.markup_buttons,
-                "back":          UserSettings.markup_buttons,
-            }
-            # Update the reply markup with the selected menu
-            await api.edit_message_reply_markup(
-                msg.chat.id, msg.message_id,
-                reply_markup=markup_map[data](lang)
-            )
-            return await api.answer_callback_query(cb.id)
-
-        # --- 2) JSON Buttons (Set Values) ---
-        if data.startswith("{") and data.endswith("}"):
-            try:
-                # Parse the JSON data from the callback
-                update = loads(data)
-            except ValueError:
-                # Handle invalid JSON data
-                return await api.answer_callback_query(cb.id, "Ungültige Daten!", show_alert=True)
-
-            old_output = s.output_type
-
-            # Update user settings based on the parsed JSON data
-            if UserLanguage.__name__ in update:
-                s.language = UserLanguage(update[UserLanguage.__name__])
-                lang = str(s.language)
-            if MapProvider.__name__ in update:
-                s.map_provider = MapProvider(update[MapProvider.__name__])
-            if UserType.__name__ in update:
-                s.user_type = UserType(update[UserType.__name__])
-            if OutputType.__name__ in update:
-                s.output_type = OutputType(update[OutputType.__name__])
-
-            # Handle special case for OutputType change
-            if old_output != s.output_type:
-
-                # Delete the old settings message
-                try:
-                    await api.delete_message(msg.chat.id, msg.message_id)
-                except Exception:
-                    pass  # Ignore errors during deletion
-
-                # Delete old voice preview if it exists
-                if getattr(s, "settings_voice_id", None):
-                    try:
-                        await api.delete_message(msg.chat.id, s.settings_voice_id)
-                    except Exception:
-                        pass  # Ignore errors during deletion
-                    s.settings_voice_id = None
-
-                # Send a new message based on the updated OutputType
-                if s.output_type == OutputType.VOICE:
-                    new_msg = await api.send_message(
-                        msg.chat.id,
-                        str(s),
-                        reply_markup=UserSettings.markup_buttons(lang),
-                        voice_only=True
-                    )
-                    s.settings_voice_id = new_msg.message_id
-                else:
-                    new_msg = await api.send_message(
-                        msg.chat.id,
-                        str(s),
-                        reply_markup=UserSettings.markup_buttons(lang)
-                    )
-
-                # Update the inline buttons reference
-                s.inline_buttons = BotMessage(new_msg.chat.id, new_msg.message_id)
+            # Only respond if the callback is related to the settings message
+            if not s.inline_buttons.exists or cb.message.message_id != s.inline_buttons.message_id:
                 return await api.answer_callback_query(cb.id)
 
-            # If no OutputType change, simply edit the text and buttons
-            await api.edit_message_text(
-                str(s),
-                msg.chat.id,
-                msg.message_id,
-                reply_markup=UserSettings.markup_buttons(lang),
-                parse_mode="Markdown"
-            )
-            return await api.answer_callback_query(cb.id)
+            match data.get("type"):
+                case Callbacks.MAP_PROVIDER_ERROR:
+                    return await api.answer_callback_query(
+                        cb.id,
+                        formatting.format_text(
+                            i18n.t("error.mapprovider_not_set", lang)
+                        ),
+                        True
+                    )
+                case Callbacks.SETTINGS_BACK:
+                    await api.edit_message_reply_markup(
+                        cb.message.chat.id,
+                        cb.message.message_id,
+                        reply_markup=UserData.markup_buttons(lang)
+                    )
+                    return await api.answer_callback_query(cb.id)
+                case Callbacks.SETTINGS_SELECT:
+                    selected = Settings.parse(data.get("select"))
+                    await api.edit_message_reply_markup(
+                        cb.message.chat.id,
+                        cb.message.message_id,
+                        reply_markup=selected.value.markup_buttons(lang)
+                    )
+                    return await api.answer_callback_query(cb.id)
+                case Callbacks.SETTINGS_UPDATE:
+                    # Update user settings based on the parsed JSON data
+                    if UserLanguage.__name__ in data:
+                        s.language = UserLanguage(data[UserLanguage.__name__])
+                        lang = str(s.language)
+                    if MapProvider.__name__ in data:
+                        s.map_provider = MapProvider(data[MapProvider.__name__])
+                    if UserType.__name__ in data:
+                        s.user_type = UserType(data[UserType.__name__])
+                    if OutputType.__name__ in data:
+                        old_output = s.output_type
+                        s.output_type = OutputType(data[OutputType.__name__])
 
-        # --- 3) Fallback ---
-        # Handle unknown callback data
-        return await api.answer_callback_query(cb.id, "Unbekannter Callback", show_alert=True)
+                        # Handle special case for OutputType change
+                        if old_output != s.output_type:
+                            # Send a new message based on the updated OutputType
+                            sent = await api.send_message(
+                                cb.message.chat.id,
+                                str(s),
+                                reply_markup=UserData.markup_buttons(lang),
+                                voice_only=s.output_type==OutputType.VOICE # type: ignore
+                            )
+
+                            # Update the inline buttons reference
+                            await bot.update_inline_buttons(cb.from_user, sent)
+                            return await api.answer_callback_query(cb.id)
+
+                    # If no OutputType change, simply edit the text and buttons
+                    await api.edit_message_text(
+                        str(s),
+                        cb.message.chat.id,
+                        cb.message.message_id,
+                        reply_markup=UserData.markup_buttons(lang),
+                        parse_mode="Markdown"
+                    )
+                    return await api.answer_callback_query(cb.id)
+                case _:
+                    return await api.answer_callback_query(
+                        cb.id,
+                        i18n.t("error.callback", lang),
+                        show_alert=True
+                    )
+
 
 @bot.api.message_handler(commands=["settings"])
 async def settings_handler(message: types.Message):
@@ -192,13 +166,13 @@ async def settings_handler(message: types.Message):
     Handler for the /settings command
     Displays current settings in text message and inline buttons to adjust settings.
     """
-    async with UserSettingsManager(message.from_user) as s:
+    async with UserManager(message.from_user) as s:
         s.bot_state = InteractionStates.IDLE
         async with bot as api:
             sent = await api.send_message(
                 message.chat.id,
                 str(s),
-                reply_markup=UserSettings.markup_buttons(str(s.language))
+                reply_markup=UserData.markup_buttons(str(s.language))
             )
 
             await bot.update_inline_buttons(message.from_user, sent)
@@ -210,7 +184,7 @@ async def automatic_handler(message: types.Message):
     Handler for the /automatic command.
     Sends a tutorial for how to activate the functionality.
     """
-    async with UserSettingsManager(message.from_user) as s:
+    async with UserManager(message.from_user) as s:
         s.bot_state = InteractionStates.IDLE
         async with aiopen("assets/automatic_tutorial.png", "rb") as f:
             await bot.api.send_photo(
@@ -229,7 +203,7 @@ async def recommend_handler(message: types.Message):
     Handler for the /recommend command.
     Requests the location from the user in a reply keyboard.
     """
-    async with UserSettingsManager(message.from_user) as s:
+    async with UserManager(message.from_user) as s:
         s.bot_state = InteractionStates.IDLE
 
         markup = types.ReplyKeyboardMarkup(
@@ -255,7 +229,7 @@ async def service_handler(message: types.Message):
     Handler for the automatic parking recommendation.
     Triggers when user's live location is close enough to campus / inner city.
     """
-    async with UserSettingsManager(message.from_user) as s:
+    async with UserManager(message.from_user) as s:
         if not s.bot_state == InteractionStates.PROXIMITY_TRIGGERED:
             s.bot_state = InteractionStates.PROXIMITY_TRIGGERED
             await bot.api.send_message(
@@ -270,7 +244,7 @@ async def location_handler(message: types.Message):
     """
     Receives user's location and returns sorted car parks.
     """
-    async with UserSettingsManager(message.from_user) as s:
+    async with UserManager(message.from_user) as s:
         lang = str(s.language)
 
         if message.location is None:
@@ -377,7 +351,7 @@ async def navigation_handler(message: types.Message):
     Handler for the /navigation command.
     Displays inline buttons that can navigate to corresponding parking lots.
     """
-    async with UserSettingsManager(message.from_user) as s:
+    async with UserManager(message.from_user) as s:
         s.bot_state = InteractionStates.IDLE
         parking_spots = await get_data(s.user_type)
         parking_spots.sort(key=lambda p: p.free_spaces, reverse=True)
@@ -427,16 +401,6 @@ async def navigation_handler(message: types.Message):
                     sent
                 )
 
-                @bot.api.callback_query_handler(lambda c : c.message.message_id == sent.message_id)
-                async def handle_navigation_callback(cb : types.CallbackQuery):
-                    await api.answer_callback_query(
-                        cb.id,
-                        formatting.format_text(
-                            i18n.t("error.mapprovider_not_set", str(s.language))
-                        ),
-                        True
-                    )
-
 
 @bot.api.message_handler(commands=["overview"])
 async def overview_handler(message: types.Message):
@@ -444,7 +408,7 @@ async def overview_handler(message: types.Message):
     Handler for the /overview command.
     Displays an overview of all car parks with their free spaces.
     """
-    async with UserSettingsManager(message.from_user) as s:
+    async with UserManager(message.from_user) as s:
         s.bot_state = InteractionStates.IDLE
         lang = str(s.language)
         all_spots = await get_data(s.user_type)
@@ -480,7 +444,7 @@ async def timing_handler(message: types.Message):
     Sets a timer for when the user needs a parking recommendation.
     Optionally, a location can be specified to search for a spot nearby.
     """
-    async with UserSettingsManager(message.from_user) as s:
+    async with UserManager(message.from_user) as s:
         result = await parse_time_location(message.text)
         # If no time was supplied, ask for it
         if result is None or result.time is None:
@@ -520,7 +484,7 @@ async def timing_handler(message: types.Message):
                         ),
                         time=s.timer.time,
                         date=s.timer.date,
-                        loc=s.timer.loc.value,
+                        loc=i18n.t(result.location.value, str(s.language)),
                         locale=str(s.language)
                     )
                 )
@@ -541,7 +505,7 @@ async def timing_handler(message: types.Message):
                 ),
                 time=result.time.strftime("%H:%M"),
                 date=result.time.strftime("%-d.%-m."),
-                loc=result.location.value,
+                loc=i18n.t(result.location.value, str(s.language)),
                 locale=str(s.language)
             ))
 
@@ -568,7 +532,7 @@ async def recommend_on_timer(message: types.Message):
     Handler for set timers triggering.
     Activates navigation command when running out.
     """
-    async with UserSettingsManager(message.from_user) as s:
+    async with UserManager(message.from_user) as s:
         aioschedule.clear(message.from_user.id) # type: ignore
         s.timer = RecommendationTimer()
         await navigation_handler(message)
@@ -581,7 +545,7 @@ async def free_text_handler(message: types.Message):
     Attempts to map the input to one of the available commands and executes it.
     If not command could be detected, a clarification message is sent instead.
     """
-    async with UserSettingsManager(message.from_user) as s:
+    async with UserManager(message.from_user) as s:
         # Skip free text if we are waiting for a time input
         if s.bot_state == InteractionStates.NEED_DATE_TIME:
             await timing_handler(message)
@@ -615,7 +579,7 @@ async def voice_input_handler(message: types.Message):
     """
     Wrapper handler for voice input being recieved as voice message
     """
-    async with UserSettingsManager(message.from_user) as s:
+    async with UserManager(message.from_user) as s:
         processing = await bot.api.reply_to(
             message,
             i18n.t("voice.processing", str(s.language))

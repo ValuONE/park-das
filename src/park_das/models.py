@@ -1,4 +1,7 @@
-﻿from dataclasses import dataclass
+﻿from json import loads, dumps
+from enum import Enum
+from dataclasses import dataclass, fields, is_dataclass
+from sqlite3 import PARSE_DECLTYPES
 
 import aiosqlite
 
@@ -9,7 +12,7 @@ import i18n
 
 from .constants import  CarParkNames, UserLanguage, UserType,\
                         MapProvider, OutputType, InteractionStates, CAR_PARK_LOCATIONS,\
-                        RoomNames, ROOM_LOCATIONS
+                        RoomNames, ROOM_LOCATIONS, Callbacks, Settings
 
 @dataclass
 class CarPark:
@@ -229,7 +232,7 @@ class RecommendationTimer:
 
 
 @dataclass
-class UserSettings:
+class UserData:
     language: UserLanguage = UserLanguage.UNDEFINED
     map_provider: MapProvider = MapProvider.UNDEFINED
     user_type: UserType = UserType.UNDEFINED
@@ -246,7 +249,7 @@ class UserSettings:
         return "\n".join(
             [
                 i18n.t(
-                    "settings.options.language_curr",
+                    "settings.options.userlanguage_curr",
                     locale=lang,
                     curr=i18n.t(
                         repr(self.language),
@@ -289,23 +292,66 @@ class UserSettings:
         """
         return quick_markup(
             {
-                i18n.t("settings.options.language", lang): {"callback_data" : "user_language"},
-                i18n.t("settings.options.mapprovider", lang): {"callback_data" : "map_provider"},
-                i18n.t("settings.options.usertype", lang): {"callback_data" : "user_type"},
-                i18n.t("settings.options.outputtype", lang): {"callback_data" : "output_type"}
+                i18n.t("settings.options."+s.name.lower(), lang): {
+                    "callback_data" : dumps({
+                        "type": Callbacks.SETTINGS_SELECT,
+                        "select": s.name
+                    })
+                }
+                for s in Settings
             },
             row_width=1
         )
 
+    @classmethod
+    def adapt(cls, settings: "UserData") -> bytes:
+        """Convert UserSettings to bytes using Enum values and recursive dataclass handling."""
+        def serialize(obj):
+            if isinstance(obj, Enum):
+                return obj.value
+            if is_dataclass(obj):
+                return {f.name: serialize(getattr(obj, f.name)) for f in fields(obj)}
+            if isinstance(obj, (list, tuple)):
+                return [serialize(i) for i in obj]
+            if isinstance(obj, dict):
+                return {k: serialize(v) for k, v in obj.items()}
+            return obj
 
-class UserSettingsManager:
+        return dumps(serialize(settings)).encode("utf-8")
+
+    @classmethod
+    def convert(cls, data: bytes) -> "UserData":
+        """Convert bytes back to UserSettings, rebuilding nested dataclasses and enums."""
+        raw = loads(data.decode('utf-8'))
+
+        return UserData(
+            language=UserLanguage(raw["language"]),
+            map_provider=MapProvider(raw["map_provider"]),
+            user_type=UserType(raw["user_type"]),
+            output_type=OutputType(raw["output_type"]),
+            bot_state=InteractionStates(raw["bot_state"]),
+            inline_buttons=BotMessage(**raw["inline_buttons"]),
+            auto_alert=BotMessage(**raw["auto_alert"]),
+            alert_set=raw["alert_set"],
+            timer=RecommendationTimer(
+                time=raw["timer"]["time"],
+                date=raw["timer"]["date"],
+                loc=RoomNames(raw["timer"]["loc"])
+            )
+        )
+
+
+class UserManager:
     DB_PATH = "settings.db"
+    TABLE_NAME = "settings"
 
     _instance = None
     _refs = {}
 
     def __new__(cls, user: User | int | None = None):
         if cls._instance is None:
+            aiosqlite.register_adapter(UserData, UserData.adapt)
+            aiosqlite.register_converter("USERSETTINGS", UserData.convert)
             cls._instance = super().__new__(cls)
         return cls._instance
 
@@ -322,74 +368,37 @@ class UserSettingsManager:
         else:
             self._user = None
 
-    async def _load_settings(self) -> UserSettings:
+    async def _load_settings(self) -> UserData:
         if self._user is None:
-            return UserSettings()
+            return UserData()
 
-        async with aiosqlite.connect(UserSettingsManager.DB_PATH) as con:
+        async with aiosqlite.connect(
+            UserManager.DB_PATH,
+            detect_types=PARSE_DECLTYPES
+        ) as con:
             await con.execute(
-                """
-                CREATE TABLE IF NOT EXISTS settings (
+                f"""
+                CREATE TABLE IF NOT EXISTS {UserManager.TABLE_NAME} (
                     user_id INTEGER PRIMARY KEY,
-                    language TEXT NOT NULL,
-                    map_provider TEXT NOT NULL,
-                    user_type TEXT NOT NULL,
-                    output_type TEXT NOT NULL,
-                    bot_state INTEGER NOT NULL,
-                    inline_chat_id INTEGER,
-                    inline_message_id INTEGER,
-                    auto_alert_chat_id INTEGER,
-                    auto_alert_message_id INTEGER,
-                    alert_set INTEGER,
-                    timer_time TEXT,
-                    timer_date TEXT,
-                    timer_loc TEXT,
-                    settings_voice_id INTEGER
+                    settings USERSETTINGS
                 )
                 """
             )
 
             async with con.execute(
-                """
+                f"""
                 SELECT
-                    language,
-                    map_provider,
-                    user_type,
-                    output_type,
-                    bot_state,
-                    inline_chat_id,
-                    inline_message_id,
-                    auto_alert_chat_id,
-                    auto_alert_message_id,
-                    alert_set,
-                    timer_time,
-                    timer_date,
-                    timer_loc,
-                    settings_voice_id
-                FROM settings
+                    settings
+                FROM {UserManager.TABLE_NAME}
                 WHERE user_id = ?
-                """,
-                (
-                    self._user,
-                )
+                """, (self._user,)
             ) as cursor:
                 result = await cursor.fetchone()
-                return UserSettings(
-                    language=UserLanguage(result[0]),
-                    map_provider=MapProvider(result[1]),
-                    user_type=UserType(result[2]),
-                    output_type=OutputType(result[3]),
-                    bot_state=InteractionStates(result[4]),
-                    inline_buttons=BotMessage(result[5], result[6]),
-                    auto_alert=BotMessage(result[7], result[8]),
-                    alert_set=bool(result[9]),
-                    timer=RecommendationTimer(result[10], result[11], RoomNames(result[12])),
-                    settings_voice_id = result[13]
-                ) if result is not None else UserSettings()
+                return result[0] if result is not None else UserData()
 
-    async def __aenter__(self) -> UserSettings:
+    async def __aenter__(self) -> UserData:
         if self._user is None:
-            return UserSettings()
+            return UserData()
 
         if self._user not in self._refs:
             self._refs[self._user] = await self._load_settings()
@@ -400,46 +409,25 @@ class UserSettingsManager:
         if self._user is None:
             return False
 
-        async with aiosqlite.connect(UserSettingsManager.DB_PATH) as con:
-            settings: UserSettings = self._refs[self._user]
+        async with aiosqlite.connect(
+            UserManager.DB_PATH,
+            detect_types=PARSE_DECLTYPES
+        ) as con:
+            settings: UserData = self._refs[self._user]
+
             await con.execute(
-                """
-                INSERT OR REPLACE INTO settings (
+                f"""
+                INSERT OR REPLACE INTO {UserManager.TABLE_NAME} (
                     user_id,
-                    language,
-                    map_provider,
-                    user_type,
-                    output_type,
-                    bot_state,
-                    inline_chat_id,
-                    inline_message_id,
-                    auto_alert_chat_id,
-                    auto_alert_message_id,
-                    alert_set,
-                    timer_time,
-                    timer_date,
-                    timer_loc,
-                    settings_voice_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    settings
+                ) VALUES (?, ?)
                 """,
                 (
                     self._user,
-                    settings.language.value,
-                    settings.map_provider.value,
-                    settings.user_type.value,
-                    settings.output_type.value,
-                    settings.bot_state.value,
-                    settings.inline_buttons.chat_id,
-                    settings.inline_buttons.message_id,
-                    settings.auto_alert.chat_id,
-                    settings.auto_alert.message_id,
-                    int(settings.alert_set),
-                    settings.timer.time,
-                    settings.timer.date,
-                    settings.timer.loc.value,
-                    settings.settings_voice_id
+                    settings
                 )
             )
+
             await con.commit()
 
         return True

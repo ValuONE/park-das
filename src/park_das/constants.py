@@ -1,4 +1,4 @@
-﻿from enum import Enum, auto
+﻿from enum import Enum, auto, IntEnum
 from json import dumps
 
 from telebot.util import quick_markup
@@ -41,106 +41,114 @@ class CarParkNames(Enum):
         raise KeyError(f"No matching enum member for '{value}' found.")
 
 class RoomNames(Enum):
-    UNDEFINED = "Ohne Ort"
-    UNI_WEST = "Universität West"
-    UNI_OST = "Universität Ost"
-    HELMHOLTZSTRASSE = "Helmholtzstraße / Verwaltung"
-    KLINIKEN_MICHELSBERG = "Kliniken Michelsberg"
-    O25_H1 = "O25 H1"
-    O25_H2 = "O25 H2"
-    N25_H3 = "N25 H3"
-    O25_H4_5 = "O25 H4/5"
-    O25_H7 = "O25 H7"
-    N25_H8 = "N25 H8"
-    N25_H9 = "N25 H9"
-    M24_H10 = "M24 H10"
-    N24_H11 = "N24 H11"
-    N24_H12 = "N24 H12"
-    N24_H13 = "N24 H13"
-    N24_H14 = "N24 H14"
-    N24_H15 = "N24 H15"
-    N24_H16 = "N24 H16"
-    O27_H20 = "O27 H20"
-    O28_H21 = "O28 H21"
-    O28_H22 = "O28 H22"
-    M28_H2101_TTU = "M28 H2101 (TTU)"
-    H218_MIKROSKOPIERSAAL = "H218 - Mikroskopiersaal"
-    H45_1_BLAUER_HOERSAAL = "H45.1 - Blauer Hörsaal"
-    H45_2_GELBER_HOERSAAL = "H45.2 - Gelber Hörsaal"
-    H47_0_501_ROTER_HOERSAAL = "H47.0.501 - Roter Hörsaal"
-    HOERSAAL_CHIRURGIE = "Hörsaal Chirurgie"
-    HOERSAAL_INNERE_MEDIZIN = "Hörsaal Innere Medizin"
-    N23_SEMINARRAUM_2622 = "N23 Seminarraum 2622"
-    N24_SEMINARRAUM_104 = "N24 Seminarraum 104"
-    N24_SEMINARRAUM_131 = "N24 Seminarraum 131"
-    N24_SEMINARRAUM_155 = "N24 Seminarraum 155"
-    N24_SEMINARRAUM_226 = "N24 Seminarraum 226"
-    N24_SEMINARRAUM_227 = "N24 Seminarraum 227"
-    N24_SEMINARRAUM_251 = "N24 Seminarraum 251"
-    N24_SEMINARRAUM_252 = "N24 Seminarraum 252"
-    N24_SEMINARRAUM_254 = "N24 Seminarraum 254"
-    N25_SEMINARRAUM_2101 = "N25 Seminarraum 2101"
-    N25_SEMINARRAUM_2102 = "N25 Seminarraum 2102"
-    N25_SEMINARRAUM_2103 = "N25 Seminarraum 2103"
-    O23_SEMINARRAUM_2609_10 = "O23 Seminarraum 2609/10"
-    O23_SEMINARRAUM_2611 = "O23 Seminarraum 2611"
-    O25_SEMINARRAUM_151 = "O25 Seminarraum 151"
-    O25_SEMINARRAUM_169 = "O25 Seminarraum 169"
-    O25_SEMINARRAUM_346 = "O25 Seminarraum 346"
-    O27_SEMINARRAUM_121 = "O27 Seminarraum 121"
-    O27_SEMINARRAUM_122 = "O27 Seminarraum 122"
-    O27_SEMINARRAUM_123 = "O27 Seminarraum 123"
-    O27_SEMINARRAUM_2201 = "O27 Seminarraum 2201"
-    O27_SEMINARRAUM_2202 = "O27 Seminarraum 2202"
-    O27_SEMINARRAUM_2203 = "O27 Seminarraum 2203"
-    O28_SEMINARRAUM_2001 = "O28 Seminarraum 2001"
-    O28_SEMINARRAUM_2002 = "O28 Seminarraum 2002"
-    O28_SEMINARRAUM_2003 = "O28 Seminarraum 2003"
-    O28_SEMINARRAUM_2004 = "O28 Seminarraum 2004"
-    O29_SEMINARRAUM_1001 = "O29 Seminarraum 1001"
-    O29_SEMINARRAUM_1002 = "O29 Seminarraum 1002"
-    O29_SEMINARRAUM_1003 = "O29 Seminarraum 1003"
-    O29_SEMINARRAUM_2001 = "O29 Seminarraum 2001"
-    O29_SEMINARRAUM_2002 = "O29 Seminarraum 2002"
-    O29_SEMINARRAUM_2003 = "O29 Seminarraum 2003"
-    O29_SEMINARRAUM_2004 = "O29 Seminarraum 2004"
-    O29_SEMINARRAUM_2005 = "O29 Seminarraum 2005"
-    O29_SEMINARRAUM_2006 = "O29 Seminarraum 2006"
-    O29_SEMINARRAUM_3001 = "O29 Seminarraum 3001"
-    O29_SEMINARRAUM_3002 = "O29 Seminarraum 3002"
-    O29_SEMINARRAUM_3003 = "O29 Seminarraum 3003"
-    O29_SEMINARRAUM_3004 = "O29 Seminarraum 3004"
-    SRGEB_RAUM_2_AEA_12 = "SRgeb Raum 2, AEA 12"
-    SEMINARRAUM_43_2_101 = "Seminarraum 43.2.101"
-    SEMINARRAUM_43_2_102 = "Seminarraum 43.2.102"
-    SEMINARRAUM_43_2_103 = "Seminarraum 43.2.103"
-    SEMINARRAUM_43_2_104 = "Seminarraum 43.2.104"
-    SEMINARRAUM_45_2_101 = "Seminarraum 45.2.101"
-    SEMINARRAUM_45_2_102 = "Seminarraum 45.2.102"
-    SEMINARRAUM_45_2_103 = "Seminarraum 45.2.103"
-    SEMINARRAUM_47_2_101 = "Seminarraum 47.2.101"
-    SEMINARRAUM_47_2_102 = "Seminarraum 47.2.102"
-    SEMINARRAUM_47_2_104 = "Seminarraum 47.2.104"
-    SEMINARRAUM_47_1_504 = "Seminarraum 47.1.504"
-    SEMINARRAUM_47_1_506 = "Seminarraum 47.1.506"
-    SEMINARRAUM_47_1_507 = "Seminarraum 47.1.507"
-    SEMINARRAUM_47_1_508 = "Seminarraum 47.1.508"
-    SEMINARRAUM_47_2_503 = "Seminarraum 47.2.503"
-    SEMINARRAUM_47_2_505 = "Seminarraum 47.2.505"
-    SEMINARRAUM_47_2_506 = "Seminarraum 47.2.506"
-    SEMINARRAUM_47_2_507 = "Seminarraum 47.2.507"
-    HH_18_HOERSAAL_120 = "HH 18 - Hörsaal 120"
-    HH_18_HOERSAAL_220 = "HH 18 - Hörsaal 220"
-    HH_18_HOERSAAL_E20 = "HH 18 - Hörsaal E20"
-    HH_18_HOERSAAL_E60 = "HH 18 - Hörsaal E60"
-    HH_22_PRAKTIKUMSRAUM_1_41 = "HH 22 - Praktikumsraum 1.41"
-    HH_22_SEMINARRAUM_1_42 = "HH 22 - Seminarraum 1.42"
-    HH_22_SEMINARRAUM_E_03 = "HH 22 - Seminarraum E.03"
-    HH_22_SEMINARRAUM_E_04 = "HH 22 - Seminarraum E.04"
-    HOERSAAL_E30 = "Hörsaal - E30"
+    UNDEFINED = "rooms.undefined"
+    UNI_WEST = "rooms.uni_west"
+    UNI_OST = "rooms.uni_ost"
+    HELMHOLTZSTRASSE = "rooms.helmholtzstrasse"
+    KLINIKEN_MICHELSBERG = "rooms.kliniken_michelsberg"
+    O25_H1 = "rooms.o25_h1"
+    O25_H2 = "rooms.o25_h2"
+    N25_H3 = "rooms.n25_h3"
+    O25_H4_5 = "rooms.o25_h4_5"
+    O25_H7 = "rooms.o25_h7"
+    N25_H8 = "rooms.n25_h8"
+    N25_H9 = "rooms.n25_h9"
+    M24_H10 = "rooms.m24_h10"
+    N24_H11 = "rooms.n24_h11"
+    N24_H12 = "rooms.n24_h12"
+    N24_H13 = "rooms.n24_h13"
+    N24_H14 = "rooms.n24_h14"
+    N24_H15 = "rooms.n24_h15"
+    N24_H16 = "rooms.n24_h16"
+    O27_H20 = "rooms.o27_h20"
+    O28_H21 = "rooms.o28_h21"
+    O28_H22 = "rooms.o28_h22"
+    M28_H2101_TTU = "rooms.m28_h2101_ttu"
+    H218_MIKROSKOPIERSAAL = "rooms.h218_mikroskopiersaal"
+    H45_1_BLAUER_HOERSAAL = "rooms.h45_1_blauer_hoersaal"
+    H45_2_GELBER_HOERSAAL = "rooms.h45_2_gelber_hoersaal"
+    H47_0_501_ROTER_HOERSAAL = "rooms.h47_0_501_roter_hoersaal"
+    HOERSAAL_CHIRURGIE = "rooms.hoersaal_chirurgie"
+    HOERSAAL_INNERE_MEDIZIN = "rooms.hoersaal_innere_medizin"
+    N23_SEMINARRAUM_2622 = "rooms.n23_seminarraum_2622"
+    N24_SEMINARRAUM_104 = "rooms.n24_seminarraum_104"
+    N24_SEMINARRAUM_131 = "rooms.n24_seminarraum_131"
+    N24_SEMINARRAUM_155 = "rooms.n24_seminarraum_155"
+    N24_SEMINARRAUM_226 = "rooms.n24_seminarraum_226"
+    N24_SEMINARRAUM_227 = "rooms.n24_seminarraum_227"
+    N24_SEMINARRAUM_251 = "rooms.n24_seminarraum_251"
+    N24_SEMINARRAUM_252 = "rooms.n24_seminarraum_252"
+    N24_SEMINARRAUM_254 = "rooms.n24_seminarraum_254"
+    N25_SEMINARRAUM_2101 = "rooms.n25_seminarraum_2101"
+    N25_SEMINARRAUM_2102 = "rooms.n25_seminarraum_2102"
+    N25_SEMINARRAUM_2103 = "rooms.n25_seminarraum_2103"
+    O23_SEMINARRAUM_2609_10 = "rooms.o23_seminarraum_2609_10"
+    O23_SEMINARRAUM_2611 = "rooms.o23_seminarraum_2611"
+    O25_SEMINARRAUM_151 = "rooms.o25_seminarraum_151"
+    O25_SEMINARRAUM_169 = "rooms.o25_seminarraum_169"
+    O25_SEMINARRAUM_346 = "rooms.o25_seminarraum_346"
+    O27_SEMINARRAUM_121 = "rooms.o27_seminarraum_121"
+    O27_SEMINARRAUM_122 = "rooms.o27_seminarraum_122"
+    O27_SEMINARRAUM_123 = "rooms.o27_seminarraum_123"
+    O27_SEMINARRAUM_2201 = "rooms.o27_seminarraum_2201"
+    O27_SEMINARRAUM_2202 = "rooms.o27_seminarraum_2202"
+    O27_SEMINARRAUM_2203 = "rooms.o27_seminarraum_2203"
+    O28_SEMINARRAUM_2001 = "rooms.o28_seminarraum_2001"
+    O28_SEMINARRAUM_2002 = "rooms.o28_seminarraum_2002"
+    O28_SEMINARRAUM_2003 = "rooms.o28_seminarraum_2003"
+    O28_SEMINARRAUM_2004 = "rooms.o28_seminarraum_2004"
+    O29_SEMINARRAUM_1001 = "rooms.o29_seminarraum_1001"
+    O29_SEMINARRAUM_1002 = "rooms.o29_seminarraum_1002"
+    O29_SEMINARRAUM_1003 = "rooms.o29_seminarraum_1003"
+    O29_SEMINARRAUM_2001 = "rooms.o29_seminarraum_2001"
+    O29_SEMINARRAUM_2002 = "rooms.o29_seminarraum_2002"
+    O29_SEMINARRAUM_2003 = "rooms.o29_seminarraum_2003"
+    O29_SEMINARRAUM_2004 = "rooms.o29_seminarraum_2004"
+    O29_SEMINARRAUM_2005 = "rooms.o29_seminarraum_2005"
+    O29_SEMINARRAUM_2006 = "rooms.o29_seminarraum_2006"
+    O29_SEMINARRAUM_3001 = "rooms.o29_seminarraum_3001"
+    O29_SEMINARRAUM_3002 = "rooms.o29_seminarraum_3002"
+    O29_SEMINARRAUM_3003 = "rooms.o29_seminarraum_3003"
+    O29_SEMINARRAUM_3004 = "rooms.o29_seminarraum_3004"
+    SRGEB_RAUM_2_AEA_12 = "rooms.srgeb_raum_2_aea_12"
+    SEMINARRAUM_43_2_101 = "rooms.seminarraum_43_2_101"
+    SEMINARRAUM_43_2_102 = "rooms.seminarraum_43_2_102"
+    SEMINARRAUM_43_2_103 = "rooms.seminarraum_43_2_103"
+    SEMINARRAUM_43_2_104 = "rooms.seminarraum_43_2_104"
+    SEMINARRAUM_45_2_101 = "rooms.seminarraum_45_2_101"
+    SEMINARRAUM_45_2_102 = "rooms.seminarraum_45_2_102"
+    SEMINARRAUM_45_2_103 = "rooms.seminarraum_45_2_103"
+    SEMINARRAUM_47_2_101 = "rooms.seminarraum_47_2_101"
+    SEMINARRAUM_47_2_102 = "rooms.seminarraum_47_2_102"
+    SEMINARRAUM_47_2_104 = "rooms.seminarraum_47_2_104"
+    SEMINARRAUM_47_1_504 = "rooms.seminarraum_47_1_504"
+    SEMINARRAUM_47_1_506 = "rooms.seminarraum_47_1_506"
+    SEMINARRAUM_47_1_507 = "rooms.seminarraum_47_1_507"
+    SEMINARRAUM_47_1_508 = "rooms.seminarraum_47_1_508"
+    SEMINARRAUM_47_2_503 = "rooms.seminarraum_47_2_503"
+    SEMINARRAUM_47_2_505 = "rooms.seminarraum_47_2_505"
+    SEMINARRAUM_47_2_506 = "rooms.seminarraum_47_2_506"
+    SEMINARRAUM_47_2_507 = "rooms.seminarraum_47_2_507"
+    HH_18_HOERSAAL_120 = "rooms.hh_18_hoersaal_120"
+    HH_18_HOERSAAL_220 = "rooms.hh_18_hoersaal_220"
+    HH_18_HOERSAAL_E20 = "rooms.hh_18_hoersaal_e20"
+    HH_18_HOERSAAL_E60 = "rooms.hh_18_hoersaal_e60"
+    HH_22_PRAKTIKUMSRAUM_1_41 = "rooms.hh_22_praktikumsraum_1_41"
+    HH_22_SEMINARRAUM_1_42 = "rooms.hh_22_seminarraum_1_42"
+    HH_22_SEMINARRAUM_E_03 = "rooms.hh_22_seminarraum_e_03"
+    HH_22_SEMINARRAUM_E_04 = "rooms.hh_22_seminarraum_e_04"
+    HOERSAAL_E30 = "rooms.hoersaal_e30"
 
     def __str__(self) -> str:
         return self.name
+
+    def __repr__(self) -> str:
+        """
+        Get valid i18n key
+
+        :return: i18n key
+        """
+        return self.value
 
     @classmethod
     def parse(cls, value):
@@ -272,6 +280,7 @@ ROOM_LOCATIONS = {
 }
 
 class SettingsEnum(Enum):
+
     @classmethod
     def markup_buttons(cls, lang : str) -> InlineKeyboardMarkup:
         """
@@ -281,10 +290,13 @@ class SettingsEnum(Enum):
         """
         options = {i18n.t(repr(opt), lang): {"callback_data": dumps(
             {
+                "type": Callbacks.SETTINGS_UPDATE,
                 cls.__name__: opt.value
             }
         )} for opt in cls if repr(opt) != "settings.undefined"}
-        options[i18n.t("settings.back", lang)] = {"callback_data": "back"}
+        options[i18n.t("settings.back", lang)] = {
+            "callback_data" : dumps({"type":Callbacks.SETTINGS_BACK})
+        }
         return quick_markup(
             options,
             row_width=1
@@ -350,7 +362,27 @@ class OutputType(SettingsEnum):
     VOICE = "settings.outputtype.voice"
     UNDEFINED = "settings.undefined"
 
-class InteractionStates(Enum):
+class Settings(Enum):
+    MAPPROVIDER = MapProvider
+    USERLANGUAGE = UserLanguage
+    USERTYPE = UserType
+    OUTPUTTYPE = OutputType
+
+    @classmethod
+    def parse(cls, name):
+        for member in cls:
+            if member.name == name:
+                return member
+        raise KeyError(f"No matching enum member for '{name}' found.")
+
+class InteractionStates(IntEnum):
     IDLE = auto()
     NEED_DATE_TIME = auto()
     PROXIMITY_TRIGGERED = auto()
+
+class Callbacks(IntEnum):
+    SETTINGS_BACK = auto()
+    SETTINGS_UPDATE = auto()
+    SETTINGS_SELECT = auto()
+    MAP_PROVIDER_ERROR = auto()
+    UNDEFINED = auto()
