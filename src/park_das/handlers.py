@@ -9,7 +9,7 @@ from telebot import types, util, formatting
 import i18n
 
 from .scrapper import get_data
-from .models import UserManager, UserData
+from .models import UserManager, UserData, Room
 from .constants import  MapProvider, UserType, UserLanguage, OutputType, \
                         InteractionStates, RoomNames, Callbacks, Settings, BotCommands
 from .util import haversine_distance, build_routing_data, static_map, check_json
@@ -205,21 +205,31 @@ async def recommend_handler(message: types.Message):
     async with UserManager(message.from_user) as s:
         s.bot_state = InteractionStates.IDLE
 
-        markup = types.ReplyKeyboardMarkup(
-            row_width=1, resize_keyboard=True, one_time_keyboard=True
-        )
-
-        button_geo = types.KeyboardButton(
-            text=i18n.t("location.btn", str(s.language)), request_location=True
-        )
-        markup.add(button_geo)
-
-        async with bot as api:
-            await api.send_message(
-                message.chat.id,
-                i18n.t("location.msg", str(s.language)),
-                reply_markup=markup,
+        # Check if user wants a recommendation for a specific location
+        parsed_loc =    (await parse_time_location(message.text, s.timer)).location\
+                        if s.timer.location == RoomNames.UNDEFINED\
+                        else s.timer.location
+        if parsed_loc != RoomNames.UNDEFINED:
+            # Get the location, pass to location handler
+            message.location = Room(parsed_loc).geo_pos
+            await location_handler(message)
+        else:
+            # If no location information was available, ask for user's location
+            markup = types.ReplyKeyboardMarkup(
+                row_width=1, resize_keyboard=True, one_time_keyboard=True
             )
+
+            button_geo = types.KeyboardButton(
+                text=i18n.t("location.btn", str(s.language)), request_location=True
+            )
+            markup.add(button_geo)
+
+            async with bot as api:
+                await api.send_message(
+                    message.chat.id,
+                    i18n.t("location.msg", str(s.language)),
+                    reply_markup=markup,
+                )
 
 
 @bot.api.message_handler(content_types=["proximity_alert_triggered"])
@@ -241,7 +251,8 @@ async def service_handler(message: types.Message):
 @bot.api.edited_message_handler(content_types=["location"])
 async def location_handler(message: types.Message):
     """
-    Receives user's location and returns sorted car parks.
+    If a user's current location is recieved, sends a recommended parking lot.
+    If a live location is recieved, updates automatic recommendation handling.
     """
     async with UserManager(message.from_user) as s:
         lang = str(s.language)
@@ -251,12 +262,13 @@ async def location_handler(message: types.Message):
 
         alert_triggered = s.bot_state == InteractionStates.PROXIMITY_TRIGGERED
 
-        # If live location is activated for the first time
+        # If it is a live location and proximity alert was not triggered
         if (message.location.live_period is not None and
             message.location.live_period > 0 and
             not alert_triggered):
-            # Ensure it is only set once
+            # If it is the first time
             if not s.alert_set:
+                # Set up automatic recommendation handling
                 s.alert_set = True
                 # Send a live location with proximity alert
                 await bot.update_bot_location(
@@ -269,10 +281,12 @@ async def location_handler(message: types.Message):
                         message.chat.id,
                         i18n.t("automatic.set", str(s.language))
                     )
+            # Exit, as recommendation should not be sent now
             return
 
-        # Remove alert if live location is no longer shared
+        # If automatic recommendation was setup but live location is no longer shared
         if s.alert_set and message.location.live_period is None:
+            # Disable automatic recommendation handling
             s.alert_set = False
             await bot.update_bot_location(
                 message.from_user,
@@ -286,16 +300,17 @@ async def location_handler(message: types.Message):
                 )
             return
 
+        # If the proximity alert was triggered, reset alert
         if alert_triggered:
             s.alert_set = False
             s.bot_state = InteractionStates.IDLE
 
-        options = [
+        parking_options = [
             p for p in await get_data(s.user_type)
             if not p.almost_full
         ]
 
-        if len(options) == 0:
+        if len(parking_options) == 0:
             async with bot as api:
                 await api.send_message(
                     message.chat.id,
@@ -303,6 +318,7 @@ async def location_handler(message: types.Message):
                 )
                 return
 
+        # Only the best option (closest) is selected
         closest_park = sorted(
             [
                 (
@@ -312,12 +328,12 @@ async def location_handler(message: types.Message):
                         p.geo_pos
                     )
                 )
-                for p in options
+                for p in parking_options
             ],
             key=lambda t: t[1]
         )[0][0]
 
-        # Determine the map provider to use for building URLs
+        # Create inline button for navigation
         markup = util.quick_markup({
                 i18n.t("recommended.nav_msg", lang):
                 build_routing_data(closest_park.geo_pos, s.map_provider)
@@ -329,19 +345,24 @@ async def location_handler(message: types.Message):
         if not alert_triggered:
             await bot.update_reply_keyboard(message.chat.id)
 
-        async with bot as api:
-            await bot.update_inline_buttons(
-                message.from_user,
-                await api.send_message(
-                    message.chat.id,
-                    i18n.t(
-                        "recommended.msg",
-                        locale=lang,
-                        spot=closest_park.to_pretty(lang)
-                    ),
-                    reply_markup=markup
+
+        # Fetch map and send as photo
+        nav_map = static_map(markers=[closest_park])
+        async with request("GET", nav_map) as req:
+            async with bot as api:
+                await bot.update_inline_buttons(
+                    message.from_user,
+                    await api.send_photo(
+                        message.chat.id,
+                        await req.read(),
+                        reply_markup=markup,
+                        caption=i18n.t(
+                            "recommended.msg",
+                            locale=lang,
+                            spot=closest_park.to_pretty(lang)
+                        )
+                    )
                 )
-            )
 
 
 @bot.api.message_handler(commands=["navigation"])
@@ -382,17 +403,18 @@ async def navigation_handler(message: types.Message):
         nav_map = static_map(markers=parking_spots)
         async with request("GET", nav_map) as req:
             async with bot as api:
-                sent = await api.send_photo(
-                    message.chat.id,
-                    await req.read(),
-                    reply_markup=util.quick_markup(
-                        spot_btns,
-                        row_width=floor(sqrt(len(parking_spots)))
-                    ),
-                    caption=i18n.t("navigation.msg", str(s.language))
+                await bot.update_inline_buttons(
+                    message.from_user,
+                    await api.send_photo(
+                        message.chat.id,
+                        await req.read(),
+                        reply_markup=util.quick_markup(
+                            spot_btns,
+                            row_width=floor(sqrt(len(parking_spots)))
+                        ),
+                        caption=i18n.t("navigation.msg", str(s.language))
+                    )
                 )
-
-                await bot.update_inline_buttons(message.from_user, sent)
 
 
 @bot.api.message_handler(commands=["overview"])

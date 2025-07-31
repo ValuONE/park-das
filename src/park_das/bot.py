@@ -9,6 +9,7 @@ import aioschedule
 import i18n
 
 from .models import UserManager, BotMessage, TimedRecommendation
+from .constants import RoomNames
 
 class ParkBot:
 
@@ -90,11 +91,15 @@ class ParkBot:
         """
         # pylint: disable=all
         from .handlers import navigation_handler
+        from .handlers import recommend_handler
         # pylint: enable=all
         async with UserManager(message.from_user) as s:
             aioschedule.clear(message.from_user.id) # type: ignore
+            if s.timer.location == RoomNames.UNDEFINED:
+                await navigation_handler(message)
+            else:
+                await recommend_handler(message)
             s.timer = TimedRecommendation()
-            await navigation_handler(message)
 
     async def update_timed_recommendation(self, user: types.User | int | None):
         """

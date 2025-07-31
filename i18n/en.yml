@@ -25,7 +25,9 @@ en:
     msg: 🤖 Welcome to ParkBot 🚘
   location:
     btn: 📍 Send location
-    msg: Tap on „%{.btn}“ to send your current location.
+    msg: |
+      For a location-based recommendation,
+      please tap on „%{.btn}“ to send your current location.
   recommended:
     msg: |
       The recommended parking spot is:

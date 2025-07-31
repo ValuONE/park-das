@@ -25,7 +25,9 @@ de:
     msg: 🤖 Willkommen bei ParkBot 🚘
   location:
     btn: 📍 Standort senden
-    msg: Tippe auf „%{.btn}“, um deinen aktuellen Standort zu schicken.
+    msg: |
+      Für eine standortbasierte Empfehlung bitte auf „%{.btn}“ tippen,
+      um den aktuellen Standort zu senden.
   recommended:
     msg: |
       Der empfohlene Parkplatz ist:

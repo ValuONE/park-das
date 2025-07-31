@@ -35,7 +35,7 @@ class ParkingLotNames(Enum):
         return self.name
 
     @classmethod
-    def parse(cls, value):
+    def parse(cls, value : str):
         for member in ParkingLotNames:
             if member.value == value:
                 return member
@@ -157,7 +157,7 @@ class RoomNames(Enum):
         return self.value
 
     @classmethod
-    def parse(cls, value):
+    def parse(cls, value : str):
         for member in cls:
             if member.value == value:
                 return member

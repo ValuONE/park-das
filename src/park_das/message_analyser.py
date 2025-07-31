@@ -71,7 +71,7 @@ async def parse_command(message_text : str | None) -> BotCommands:
         Navigation: Sends an interactive map of recommended parking lots, which the user can use to navigate to a parking spot.
         Timer: Controls scheduled parking recommendations to be sent at a given time, optionally for specific locations.
         Automatic: Explains how to set up automatic parking recommendations, which are sent each time the user arrives on location.
-        Recommend: First prompts the user to share their location and then, based on the location, recommends the best parking lot nearby.
+        Recommend: Recommends the best parking lot close to the user's current location, or a location the user explicitly specified.
         Overview: Shows all existing parking lots on a map, with occupancy level, regardless of the user's location.
         Unknown: Catch-all, asks user for clarification if no other command matches.
 
@@ -152,8 +152,9 @@ async def parse_time_location(
 
         Additionally, you also extract location information if it is present.
         The locations could be rooms such as "O25", "N24 room 227" or "Lecture hall H20",
-        or buildings such as "University West", "Administration". If a building or room does
-        not have a corresponding enum entry, use your best judgement to pick a best match.
+        or buildings such as "University West", "Administration".
+        If there clearly is location information present which cannot be matched directly,
+        then use your best judgement to determine a best match.
 
         If no location information is present, the location should be RoomNames.UNDEFINED.
 
