@@ -6,15 +6,14 @@ from aiohttp import request
 
 from telebot import types, util, formatting
 
-import aioschedule
 import i18n
 
 from .scrapper import get_data
-from .models import UserManager, UserData, RecommendationTimer
+from .models import UserManager, UserData
 from .constants import  MapProvider, UserType, UserLanguage, OutputType, \
-                        InteractionStates, RoomNames, Callbacks, Settings
+                        InteractionStates, RoomNames, Callbacks, Settings, BotCommands
 from .util import haversine_distance, build_routing_data, static_map, check_json
-from .message_analyser import parse_command, BotCommands, parse_time_location
+from .message_analyser import parse_command, parse_time_location
 from .voice_support import transcripe
 
 from .bot import bot
@@ -390,16 +389,10 @@ async def navigation_handler(message: types.Message):
                         spot_btns,
                         row_width=floor(sqrt(len(parking_spots)))
                     ),
-                    caption=i18n.t(
-                        "navigation.msg",
-                        str(s.language)
-                    )
+                    caption=i18n.t("navigation.msg", str(s.language))
                 )
 
-                await bot.update_inline_buttons(
-                    message.from_user,
-                    sent
-                )
+                await bot.update_inline_buttons(message.from_user, sent)
 
 
 @bot.api.message_handler(commands=["overview"])
@@ -438,104 +431,58 @@ async def overview_handler(message: types.Message):
 
 
 @bot.api.message_handler(commands=["timer"])
-async def timing_handler(message: types.Message):
+async def timed_recommendation_handler(message: types.Message):
     """
     Handler for the /timer command.
-    Sets a timer for when the user needs a parking recommendation.
-    Optionally, a location can be specified to search for a spot nearby.
+    Sets a timer for when the user wants a parking recommendation.
+    Optionally, a location can be specified for which to search nearby.
     """
     async with UserManager(message.from_user) as s:
-        result = await parse_time_location(message.text)
-        # If no time was supplied, ask for it
-        if result is None or result.time is None:
-            # If no date time was given
-            if s.bot_state == InteractionStates.NEED_DATE_TIME:
-                # Potentially cancel the reminder..
-                if result.cancel:
+        timer_old = s.timer
+        s.timer = await parse_time_location(message.text, s.timer)
+
+        # Message did not contain datetime
+        if s.timer.date_time is None:
+            # Recommendation was scheduled -> Cancelled
+            if timer_old.date_time is not None:
+                await bot.api.reply_to(
+                    message,
+                    i18n.t("timer.cancel", str(s.language))
+                )
+                await bot.update_timed_recommendation(message.from_user)
+            # No recommendation was scheduled and no datetime was provided
+            else:
+                # Already asked -> Recommendation is not changed / cancelled
+                if s.bot_state == InteractionStates.NEED_DATE_TIME:
                     await bot.api.reply_to(
                         message,
-                        i18n.t("timer.cancel", str(s.language))
+                        i18n.t("timer.set_cancel",str(s.language))
                     )
-                    aioschedule.clear(message.from_user.id) # type: ignore
-                    s.timer = RecommendationTimer()
-                # .. or inform user that nothing was changed
+                    s.bot_state = InteractionStates.IDLE
+                # Did not ask yet -> Ask for clarification
                 else:
                     await bot.api.reply_to(
                         message,
-                        i18n.t(
-                            (
-                                "timer.set_cancel" if
-                                not s.timer.exists else
-                                "timer.set_already_cancel"
-                            ),
-                            str(s.language))
+                        i18n.t("timer.unknown", str(s.language))
                     )
-                s.bot_state = InteractionStates.IDLE
-                return
-            # Potentially warn user that a timer was already set
-            if s.timer.exists:
-                await bot.api.reply_to(
-                    message,
-                    i18n.t(
-                        (
-                            "timer.set_already" if
-                            not s.timer.with_location else
-                            "timer.loc_set_already"
-                        ),
-                        time=s.timer.time,
-                        date=s.timer.date,
-                        loc=i18n.t(result.location.value, str(s.language)),
-                        locale=str(s.language)
-                    )
-                )
-            else:
-                await bot.api.reply_to(
-                    message,
-                    i18n.t("timer.unknown", str(s.language))
-                )
-            s.bot_state = InteractionStates.NEED_DATE_TIME
+                    s.bot_state = InteractionStates.NEED_DATE_TIME
+        # Message did contain datetime -> Timer set / changed
         else:
             s.bot_state = InteractionStates.IDLE
 
             await bot.api.reply_to(message, i18n.t(
                 (
                     "timer.set" if
-                    result.location == RoomNames.UNDEFINED else
+                    s.timer.location == RoomNames.UNDEFINED else
                     "timer.loc_set"
                 ),
-                time=result.time.strftime("%H:%M"),
-                date=result.time.strftime("%-d.%-m."),
-                loc=i18n.t(result.location.value, str(s.language)),
+                time=s.timer.date_time.strftime("%H:%M"),
+                date=s.timer.date_time.strftime("%-d.%-m."),
+                loc=i18n.t(repr(s.timer.location), str(s.language)),
                 locale=str(s.language)
             ))
 
-            # Store for later
-            s.timer = RecommendationTimer(
-                result.time.strftime("%H:%M"),
-                result.time.strftime("%-d.%-m."),
-                result.location
-            )
-
-            # Possibly remove existing reminder
-            aioschedule.clear(message.from_user.id) # type: ignore
-            # Determine day (-> only at most one week in the future!)
-            day_of_week = result.time.strftime("%A").lower()
-            # pylint: disable=no-member
-            aioschedule.every().on(day_of_week).at( # type: ignore
-                result.time.strftime("%H:%M")
-            ).do(recommend_on_timer, message=message).tag(message.from_user.id) # type: ignore
-            # pylint: enable=no-member
-
-
-async def recommend_on_timer(message: types.Message):
-    """
-    Handler for set timers triggering.
-    Activates navigation command when running out.
-    """
-    async with UserManager(message.from_user) as s:
-        aioschedule.clear(message.from_user.id) # type: ignore
-        s.timer = RecommendationTimer()
-        await navigation_handler(message)
+            await bot.update_timed_recommendation(message.from_user)
 
 
 @bot.api.message_handler(content_types="text")
@@ -548,7 +495,7 @@ async def free_text_handler(message: types.Message):
     async with UserManager(message.from_user) as s:
         # Skip free text if we are waiting for a time input
         if s.bot_state == InteractionStates.NEED_DATE_TIME:
-            await timing_handler(message)
+            await timed_recommendation_handler(message)
             return
 
         parsed = await parse_command(message.text)
@@ -556,7 +503,7 @@ async def free_text_handler(message: types.Message):
             case BotCommands.NAVIGATION:
                 await navigation_handler(message)
             case BotCommands.TIMER:
-                await timing_handler(message)
+                await timed_recommendation_handler(message)
             case BotCommands.RECOMMEND:
                 await recommend_handler(message)
             case BotCommands.OVERVIEW:

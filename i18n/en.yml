@@ -49,13 +49,6 @@ en:
     set: "Recommendation will be sent on the 📅 %{date} at ⏰ %{time}!"
     loc_set: "Recommendation for 📍 %{loc} will be sent on the 📅 %{date} at ⏰ %{time}!"
     set_cancel: Recommendation was not set!
-    set_already: |
-      ℹ️ Recommendation is already set for ⏰ %{time} on the 📅 %{date}!
-      🔄 What should the recommendation be changed to?
-    loc_set_already: |
-      ℹ️ Recommendation for 📍 %{loc} is already set for ⏰ %{time} on the 📅 %{date}!
-      🔄 What should the recommendation be changed to?
-    set_already_cancel: Recommendation was not changed!
   automatic:
     tutorial: Please enable live location sharing to recieve automatic recommendations!
     set: Automatic recommendations activated ⛳️!

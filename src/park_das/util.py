@@ -8,7 +8,7 @@ from typing import List, Any, Tuple, Dict
 from telebot.types import Location
 
 from .constants import MapProvider, Callbacks
-from .models import CarPark
+from .models import ParkingLot
 
 def check_json(data: str | bytes) -> bool:
     """
@@ -82,7 +82,7 @@ def _build_applemaps_url(location: Location) -> str:
     return f"https://maps.apple.com/?daddr={location.latitude},{location.longitude}&dirflg=d"
 
 # https://developers.google.com/maps/documentation/maps-static/start
-def static_map(markers: List[CarPark] | None = None, path: str | None = None) -> str:
+def static_map(markers: List[ParkingLot] | None = None, path: str | None = None) -> str:
     """
     Creates link to download a static map using the Google Maps API.
     The map is positioned and zoomed to show the provided locations as color coded markers.

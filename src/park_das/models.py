@@ -1,5 +1,7 @@
 ﻿from json import loads, dumps
 from enum import Enum
+from typing import List
+from datetime import datetime
 from dataclasses import dataclass, fields, is_dataclass
 from sqlite3 import PARSE_DECLTYPES
 
@@ -10,22 +12,22 @@ from telebot.types import Location, User, InlineKeyboardMarkup
 
 import i18n
 
-from .constants import  CarParkNames, UserLanguage, UserType,\
-                        MapProvider, OutputType, InteractionStates, CAR_PARK_LOCATIONS,\
+from .constants import  ParkingLotNames, UserLanguage, UserType,\
+                        MapProvider, OutputType, InteractionStates, PARKING_LOT_LOCATIONS,\
                         RoomNames, ROOM_LOCATIONS, Callbacks, Settings
 
 @dataclass
-class CarPark:
+class ParkingLot:
     """
-    Represents a car park with a name and the number of available spaces.
+    Represents a parking lot with a name and the number of available spaces.
     
     Attributes:
-        _code_name: The name of the car park, based on the CarParkNames enum.
+        _code_name: The name of the parking lot, based on the ParkingLotNames enum.
         free_spaces: The current number of available parking spaces.
         total_spaces: The total number of available parking spaces.
         is_visitor: Flag whether this is a visitor parking spot.
     """
-    _code_name: CarParkNames
+    _code_name: ParkingLotNames
     free_spaces: int
     total_spaces: int
     is_visitor: bool
@@ -43,9 +45,9 @@ class CarPark:
         :param value: Other parking spot
         :return: True if name is same
         """
-        if isinstance(value, CarPark):
+        if isinstance(value, ParkingLot):
             return self._code_name == value._code_name
-        if isinstance(value, CarParkNames):
+        if isinstance(value, ParkingLotNames):
             return self._code_name == value
         return False
 
@@ -69,11 +71,11 @@ class CarPark:
     @property
     def geo_pos(self) -> Location:
         """
-        Returns the geographic position (latitude, longitude) of the car park.
+        Returns the geographic position (latitude, longitude) of the parking lot.
 
-        :return: A telegram location containing the latitude and longitude of the car park.
+        :return: A telegram location containing the latitude and longitude of the parking lot.
         """
-        return CAR_PARK_LOCATIONS[self._code_name]
+        return PARKING_LOT_LOCATIONS[self._code_name]
 
     @property
     def almost_full(self) -> bool:
@@ -115,9 +117,10 @@ class CarPark:
 
     def to_pretty(self, lang: str, index: int | None = None) -> str:
         """
-        Formats a car park's information into a string.
+        Formats a parking lot's information into a string.
 
-        :return: A formatted string containing the car park's name, free spaces and a status icon.
+        :return: A formatted string containing the parking lot's name,\
+                 free spaces and a status icon.
         """
         return i18n.t(
             ("overview.single"
@@ -217,18 +220,13 @@ class BotMessage:
 
 
 @dataclass
-class RecommendationTimer:
-    time: str | None = None
-    date: str | None = None
-    loc: RoomNames = RoomNames.UNDEFINED
-
-    @property
-    def exists(self) -> bool:
-        return self.time is not None and self.date is not None
+class TimedRecommendation:
+    date_time: datetime | None = None
+    location: RoomNames = RoomNames.UNDEFINED
 
     @property
     def with_location(self) -> bool:
-        return self.loc is not None
+        return self.location is not None
 
 
 @dataclass
@@ -241,7 +239,7 @@ class UserData:
     inline_buttons: BotMessage = BotMessage()
     auto_alert: BotMessage = BotMessage()
     alert_set: bool = False
-    timer: RecommendationTimer = RecommendationTimer()
+    timer: TimedRecommendation = TimedRecommendation()
     settings_voice_id: int | None = None
 
     def __str__(self) -> str:
@@ -309,6 +307,8 @@ class UserData:
         def serialize(obj):
             if isinstance(obj, Enum):
                 return obj.value
+            if isinstance(obj, datetime):
+                return obj.isoformat(timespec='minutes')
             if is_dataclass(obj):
                 return {f.name: serialize(getattr(obj, f.name)) for f in fields(obj)}
             if isinstance(obj, (list, tuple)):
@@ -333,10 +333,12 @@ class UserData:
             inline_buttons=BotMessage(**raw["inline_buttons"]),
             auto_alert=BotMessage(**raw["auto_alert"]),
             alert_set=raw["alert_set"],
-            timer=RecommendationTimer(
-                time=raw["timer"]["time"],
-                date=raw["timer"]["date"],
-                loc=RoomNames(raw["timer"]["loc"])
+            timer=TimedRecommendation(
+                date_time=\
+                    datetime.fromisoformat(raw["timer"]["date_time"])\
+                    if raw["timer"]["date_time"] is not None\
+                    else None,
+                location=RoomNames.parse(raw["timer"]["location"])
             )
         )
 
@@ -355,7 +357,7 @@ class UserManager:
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, user : User | int | None):
+    def __init__(self, user : User | int | None = None):
         """
         Opens database to access user information
 
@@ -395,6 +397,33 @@ class UserManager:
             ) as cursor:
                 result = await cursor.fetchone()
                 return result[0] if result is not None else UserData()
+
+    @property
+    async def users(self) -> List[int]:
+        """
+        Retrieve all user IDs from the specified table in the SQLite database.
+
+        Args:
+            db_path (str): Path to the SQLite database file.
+            table_name (str): Name of the table to query.
+
+        Returns:
+            list: A list of all user IDs in the table.
+        """
+        async with aiosqlite.connect(
+            UserManager.DB_PATH,
+            detect_types=PARSE_DECLTYPES
+        ) as con:
+            async with con.execute(
+                f"""
+                SELECT
+                    user_id
+                FROM {UserManager.TABLE_NAME}
+                """
+            ) as cursor:
+                user_ids = [row[0] for row in await cursor.fetchall()]
+                return user_ids
+
 
     async def __aenter__(self) -> UserData:
         if self._user is None:

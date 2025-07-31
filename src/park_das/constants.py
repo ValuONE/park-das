@@ -6,7 +6,7 @@ from telebot.types import Location, InlineKeyboardMarkup
 
 import i18n
 
-class CarParkNames(Enum):
+class ParkingLotNames(Enum):
     P09 = "Parkplatz P09"
     P10 = "Parkplatz P10"
     P11 = "Parkplatz P11"
@@ -33,7 +33,7 @@ class CarParkNames(Enum):
 
     @classmethod
     def parse(cls, value):
-        for member in CarParkNames:
+        for member in ParkingLotNames:
             if member.value == value:
                 return member
             if value == "Parkhaus Mitte P20":
@@ -157,27 +157,27 @@ class RoomNames(Enum):
                 return member
         raise KeyError(f"No matching enum member for '{value}' found.")
 
-CAR_PARK_LOCATIONS = {
-    CarParkNames.P09: Location(9.942359, 48.41912),
-    CarParkNames.P10: Location(9.943917, 48.42005),
-    CarParkNames.P11: Location(9.944910, 48.42046),
-    CarParkNames.P12: Location(9.945848, 48.42076),
-    CarParkNames.P13: Location(9.945848, 48.42076),
-    CarParkNames.P16: Location(9.947908, 48.42263),
-    CarParkNames.P18: Location(9.949502, 48.42304),
-    CarParkNames.P20: Location(9.951033, 48.42396),
-    CarParkNames.P22: Location(9.954085, 48.42506),
-    CarParkNames.P26: Location(9.951642, 48.42389),
-    CarParkNames.P23: Location(9.954960, 48.42543),
-    CarParkNames.P24: Location(9.953938, 48.42481),
-    CarParkNames.P32: Location(9.957266, 48.42410),
-    CarParkNames.P41: Location(9.958382, 48.42599),
-    CarParkNames.P44: Location(9.962580, 48.42602),
-    CarParkNames.HE: Location(9.958027, 48.42585),
-    CarParkNames.M1: Location(9.991174, 48.40938),
-    CarParkNames.M2: Location(9.992269, 48.40819),
-    CarParkNames.M3: Location(9.99374, 48.41076),
-    CarParkNames.M4: Location(9.994923, 48.40974)
+PARKING_LOT_LOCATIONS = {
+    ParkingLotNames.P09: Location(9.942359, 48.41912),
+    ParkingLotNames.P10: Location(9.943917, 48.42005),
+    ParkingLotNames.P11: Location(9.944910, 48.42046),
+    ParkingLotNames.P12: Location(9.945848, 48.42076),
+    ParkingLotNames.P13: Location(9.945848, 48.42076),
+    ParkingLotNames.P16: Location(9.947908, 48.42263),
+    ParkingLotNames.P18: Location(9.949502, 48.42304),
+    ParkingLotNames.P20: Location(9.951033, 48.42396),
+    ParkingLotNames.P22: Location(9.954085, 48.42506),
+    ParkingLotNames.P26: Location(9.951642, 48.42389),
+    ParkingLotNames.P23: Location(9.954960, 48.42543),
+    ParkingLotNames.P24: Location(9.953938, 48.42481),
+    ParkingLotNames.P32: Location(9.957266, 48.42410),
+    ParkingLotNames.P41: Location(9.958382, 48.42599),
+    ParkingLotNames.P44: Location(9.962580, 48.42602),
+    ParkingLotNames.HE: Location(9.958027, 48.42585),
+    ParkingLotNames.M1: Location(9.991174, 48.40938),
+    ParkingLotNames.M2: Location(9.992269, 48.40819),
+    ParkingLotNames.M3: Location(9.99374, 48.41076),
+    ParkingLotNames.M4: Location(9.994923, 48.40974)
 }
 
 ROOM_LOCATIONS = {
@@ -386,3 +386,20 @@ class Callbacks(IntEnum):
     SETTINGS_SELECT = auto()
     MAP_PROVIDER_ERROR = auto()
     UNDEFINED = auto()
+
+class BotCommands(Enum):
+    NAVIGATION = "Navigation"
+    TIMER = "Timing"
+    AUTOMATIC = "Automatic"
+    RECOMMEND = "Recommend"
+    OVERVIEW = "Overview"
+    UNKNOWN = "Unknown"
+
+    @classmethod
+    def parse(cls, to_parse : str | None):
+        if to_parse is None:
+            return BotCommands.UNKNOWN
+        for com in BotCommands:
+            if to_parse.find(com.value) != -1:
+                return com
+        return BotCommands.UNKNOWN
