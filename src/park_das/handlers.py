@@ -70,7 +70,7 @@ async def help_handler(message: types.Message):
 @bot.api.callback_query_handler(
     func=lambda cb: cb.data is not None and check_json(cb.data)
 )
-async def handle_settings_callback(cb: types.CallbackQuery):
+async def callbacks_handler(cb: types.CallbackQuery):
     """
     Handles callback queries that contain callback data.
 
