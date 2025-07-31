@@ -7,6 +7,9 @@ from telebot.types import Location, InlineKeyboardMarkup
 import i18n
 
 class ParkingLotNames(Enum):
+    """
+    Describes all parking lots on campus and in the city
+    """
     P09 = "Parkplatz P09"
     P10 = "Parkplatz P10"
     P11 = "Parkplatz P11"
@@ -41,6 +44,9 @@ class ParkingLotNames(Enum):
         raise KeyError(f"No matching enum member for '{value}' found.")
 
 class RoomNames(Enum):
+    """
+    Describes all rooms, lecture halls, .. on campus and in the city
+    """
     UNDEFINED = "rooms.undefined"
     UNI_WEST = "rooms.uni_west"
     UNI_OST = "rooms.uni_ost"
@@ -280,6 +286,9 @@ ROOM_LOCATIONS = {
 }
 
 class SettingsEnum(Enum):
+    """
+    Parent class for all user changeable settings
+    """
 
     @classmethod
     def markup_buttons(cls, lang : str) -> InlineKeyboardMarkup:
@@ -311,11 +320,17 @@ class SettingsEnum(Enum):
         return self.value
 
 class MapProvider(SettingsEnum):
+    """
+    Describes available map providers for navigation
+    """
     APPLE = "settings.mapprovider.apple"
     GOOGLE = "settings.mapprovider.google"
     UNDEFINED = "settings.undefined"
 
 class UserLanguage(SettingsEnum):
+    """
+    Describes available output languages
+    """
     EN = "settings.language.en"
     DE = "settings.language.de"
     UNDEFINED = "settings.undefined"
@@ -329,6 +344,9 @@ class UserLanguage(SettingsEnum):
         return self.name.lower()
 
 class UserType(SettingsEnum):
+    """
+    Describes kinds of people using the bot
+    """
     VISITOR = "settings.usertype.visitor"
     WORKER = "settings.usertype.student"
     CITY = "settings.usertype.city"
@@ -358,11 +376,17 @@ class UserType(SettingsEnum):
                 )
 
 class OutputType(SettingsEnum):
+    """
+    Describes available output types
+    """
     TEXT = "settings.outputtype.text"
     VOICE = "settings.outputtype.voice"
     UNDEFINED = "settings.undefined"
 
 class Settings(Enum):
+    """
+    Describes settings / preferences that a user can change
+    """
     MAPPROVIDER = MapProvider
     USERLANGUAGE = UserLanguage
     USERTYPE = UserType
@@ -376,11 +400,17 @@ class Settings(Enum):
         raise KeyError(f"No matching enum member for '{name}' found.")
 
 class InteractionStates(IntEnum):
+    """
+    Describes conversation states a user can be in
+    """
     IDLE = auto()
     NEED_DATE_TIME = auto()
     PROXIMITY_TRIGGERED = auto()
 
 class Callbacks(IntEnum):
+    """
+    Describes intent of callbacks from a user
+    """
     SETTINGS_BACK = auto()
     SETTINGS_UPDATE = auto()
     SETTINGS_SELECT = auto()
@@ -388,6 +418,9 @@ class Callbacks(IntEnum):
     UNDEFINED = auto()
 
 class BotCommands(Enum):
+    """
+    Describes commands available to the user
+    """
     NAVIGATION = "Navigation"
     TIMER = "Timing"
     AUTOMATIC = "Automatic"

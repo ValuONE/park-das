@@ -88,9 +88,9 @@ class ParkBot:
         Handler for set timers triggering.
         Activates navigation command when running out.
         """
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable=all
         from .handlers import navigation_handler
-        # pylint: enable=import-outside-toplevel
+        # pylint: enable=all
         async with UserManager(message.from_user) as s:
             aioschedule.clear(message.from_user.id) # type: ignore
             s.timer = TimedRecommendation()
@@ -100,8 +100,7 @@ class ParkBot:
         """
         Ensures only one timed recommendation per user is scheduled
 
-        :param message: Message containing the request
-        :param func: Function to execute when timer is up
+        :param user: User for which to update the timer
         """
         # Determine user id
         mock_user_id =  user.id\

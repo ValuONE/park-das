@@ -74,13 +74,13 @@ async def handle_settings_callback(cb: types.CallbackQuery):
     """
     Handles callback queries that contain callback data.
 
-    This function processes user interactions with the settings menu, allowing them to:
+    This function processes user interactions, and more:
     - Navigate between different settings categories (e.g., language, map provider).
     - Update specific settings by selecting options.
+    - Informing the user if no map provider has been selected.
     - Handle fallback cases for unknown callbacks.
 
-    Args:
-        cb (types.CallbackQuery): The callback query object containing user interaction data.
+    :param cb: Object containing original message and callback data.
     """
     async with bot as api:
         async with UserManager(cb.from_user.id) as s:

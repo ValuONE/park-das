@@ -169,7 +169,7 @@ class ParkingLot:
 
 
 @dataclass
-class RecommendCloseTo:
+class Room:
     """
     Represents a location with a name.
     
@@ -185,7 +185,7 @@ class RecommendCloseTo:
         :param value: Other location
         :return: True if name is same
         """
-        if isinstance(value, RecommendCloseTo):
+        if isinstance(value, Room):
             return self._code_name == value._code_name
         if isinstance(value, RoomNames):
             return self._code_name == value
@@ -370,6 +370,32 @@ class UserManager:
         else:
             self._user = None
 
+    @property
+    async def users(self) -> List[int]:
+        """
+        Retrieve all user IDs from the specified table in the SQLite database.
+
+        Args:
+            db_path (str): Path to the SQLite database file.
+            table_name (str): Name of the table to query.
+
+        Returns:
+            list: A list of all user IDs in the table.
+        """
+        async with aiosqlite.connect(
+            UserManager.DB_PATH,
+            detect_types=PARSE_DECLTYPES
+        ) as con:
+            async with con.execute(
+                f"""
+                SELECT
+                    user_id
+                FROM {UserManager.TABLE_NAME}
+                """
+            ) as cursor:
+                user_ids = [row[0] for row in await cursor.fetchall()]
+                return user_ids
+
     async def _load_settings(self) -> UserData:
         if self._user is None:
             return UserData()
@@ -397,33 +423,6 @@ class UserManager:
             ) as cursor:
                 result = await cursor.fetchone()
                 return result[0] if result is not None else UserData()
-
-    @property
-    async def users(self) -> List[int]:
-        """
-        Retrieve all user IDs from the specified table in the SQLite database.
-
-        Args:
-            db_path (str): Path to the SQLite database file.
-            table_name (str): Name of the table to query.
-
-        Returns:
-            list: A list of all user IDs in the table.
-        """
-        async with aiosqlite.connect(
-            UserManager.DB_PATH,
-            detect_types=PARSE_DECLTYPES
-        ) as con:
-            async with con.execute(
-                f"""
-                SELECT
-                    user_id
-                FROM {UserManager.TABLE_NAME}
-                """
-            ) as cursor:
-                user_ids = [row[0] for row in await cursor.fetchall()]
-                return user_ids
-
 
     async def __aenter__(self) -> UserData:
         if self._user is None:

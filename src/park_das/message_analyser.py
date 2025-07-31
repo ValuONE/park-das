@@ -14,6 +14,7 @@ import i18n
 from .models import TimedRecommendation
 from .constants import RoomNames, BotCommands
 
+
 _genai_client = genai.Client(
     api_key=os.environ["GOOGLEMAPS_API_KEY"],
     http_options=types.HttpOptions(api_version='v1beta')
@@ -46,8 +47,14 @@ class _ParsedTimeAndLocation(BaseModel):
 #pylint: enable=too-few-public-methods
 
 
-async def parse_command(user_txt : str | None) -> BotCommands:
-    if user_txt is None:
+async def parse_command(message_text : str | None) -> BotCommands:
+    """
+    Parses user intent (command) from recieved text or transcribed audio.
+
+    :param message_text: Text as string, recieved from a user
+    :return: Command that best matches the intent of the user
+    """
+    if message_text is None:
         return BotCommands.UNKNOWN
 
     command_conf = types.GenerateContentConfig(
@@ -104,7 +111,7 @@ async def parse_command(user_txt : str | None) -> BotCommands:
 
     response = await _genai_client.aio.models.generate_content(
         model="gemini-2.0-flash",
-        contents=user_txt,
+        contents=message_text,
         config=command_conf
     )
 
@@ -112,11 +119,19 @@ async def parse_command(user_txt : str | None) -> BotCommands:
 
 
 async def parse_time_location(
-    user_txt : str | None,
+    message_text : str | None,
     existing_timer : TimedRecommendation
 ) -> TimedRecommendation:
+    """
+    Parses time and location from recieved text or transcribed audio.
 
-    if user_txt is None:
+    :param message_text: Text as string, recieved from a user
+    :param existing_timer: Existing recommendation for user
+    :raises ValueError: Raised if LLM did not process the message
+    :return: Recommendation, either containing datetime, location or both
+    """
+
+    if message_text is None:
         return existing_timer
 
     command_conf = types.GenerateContentConfig(
@@ -177,7 +192,7 @@ async def parse_time_location(
 
     response = await _genai_client.aio.models.generate_content(
         model="gemini-2.0-flash",
-        contents=user_txt,
+        contents=message_text,
         config=command_conf
     )
 
