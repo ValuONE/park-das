@@ -386,6 +386,17 @@ class UserManager:
             UserManager.DB_PATH,
             detect_types=PARSE_DECLTYPES
         ) as con:
+            # Ensure table exists
+            await con.execute(
+                f"""
+                CREATE TABLE IF NOT EXISTS {UserManager.TABLE_NAME} (
+                    user_id INTEGER PRIMARY KEY,
+                    settings USERSETTINGS
+                )
+                """
+            )
+
+            # Fetch all users
             async with con.execute(
                 f"""
                 SELECT
@@ -404,6 +415,7 @@ class UserManager:
             UserManager.DB_PATH,
             detect_types=PARSE_DECLTYPES
         ) as con:
+            # Ensure table exists
             await con.execute(
                 f"""
                 CREATE TABLE IF NOT EXISTS {UserManager.TABLE_NAME} (
@@ -413,6 +425,7 @@ class UserManager:
                 """
             )
 
+            # Fetch data for user, or default data
             async with con.execute(
                 f"""
                 SELECT
