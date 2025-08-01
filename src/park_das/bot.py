@@ -1,11 +1,15 @@
 ﻿import os
 
+from datetime import datetime
+
 from telebot.async_telebot import AsyncTeleBot
 from telebot import types, formatting
 
+import aioschedule
 import i18n
 
-from .models import UserSettingsManager, BotMessage
+from .models import UserManager, BotMessage, TimedRecommendation
+from .constants import RoomNames
 
 class ParkBot:
 
@@ -21,6 +25,7 @@ class ParkBot:
         """
         Creates bot commands, does all initialization
         """
+        # Setup commmands
         await self.api.delete_my_commands()
         for lang in i18n.get("available_locales"):
             await self.api.set_my_commands(
@@ -60,6 +65,9 @@ class ParkBot:
                 ],
                 language_code=lang
             )
+        # Setup recommendations
+        for user in await UserManager().users:
+            await self.update_timed_recommendation(user)
 
     async def __aenter__(self) -> AsyncTeleBot:
         return self._bot
@@ -76,6 +84,61 @@ class ParkBot:
         """
         return self._bot
 
+    async def _timer_up(self, message: types.Message):
+        """
+        Handler for set timers triggering.
+        Activates navigation command when running out.
+        """
+        # pylint: disable=all
+        from .handlers import navigation_handler
+        from .handlers import recommend_handler
+        # pylint: enable=all
+        async with UserManager(message.from_user) as s:
+            aioschedule.clear(message.from_user.id) # type: ignore
+            if s.timer.location == RoomNames.UNDEFINED:
+                await navigation_handler(message)
+            else:
+                await recommend_handler(message)
+            s.timer = TimedRecommendation()
+
+    async def update_timed_recommendation(self, user: types.User | int | None):
+        """
+        Ensures only one timed recommendation per user is scheduled
+
+        :param user: User for which to update the timer
+        """
+        # Determine user id
+        mock_user_id =  user.id\
+                        if isinstance(user, types.User)\
+                        else user\
+                            if user is not None\
+                            else 0
+        async with UserManager(mock_user_id) as s:
+            # If reminder needs to be set & is not in the past
+            if s.timer.date_time is not None and s.timer.date_time > datetime.now():
+                # Determine day (-> only at most one week in the future!)
+                day_of_week = s.timer.date_time.strftime("%A").lower()
+                # Create fake message to allow for recovery from restart
+                mock_message = types.Message(
+                    message_id=mock_user_id,
+                    options={},
+                    chat=types.ChatFullInfo(mock_user_id, "private"),
+                    date=0,
+                    from_user=types.User(mock_user_id, True, "Park", "Bot"),
+                    content_type="text",
+                    json_string=""
+                )
+                # pylint: disable=no-member
+                aioschedule.every(
+                ).on(day_of_week # type: ignore
+                ).at(s.timer.date_time.strftime("%H:%M")
+                ).do(self._timer_up, message=mock_message
+                ).tag(user.id) # type: ignore
+                # pylint: enable=no-member
+            else:
+                # Otherwise remove existing reminder
+                aioschedule.clear(mock_user_id) # type: ignore
+
     async def update_inline_buttons(self, user: types.User | int | None, sent: types.Message):
         """
         Ensures only one set of inline buttons is present.
@@ -83,7 +146,7 @@ class ParkBot:
         :param user: User the message was sent to
         :param sent: Message containing inline buttons
         """
-        async with UserSettingsManager(user) as s:
+        async with UserManager(user) as s:
             if s.inline_buttons.exists:
                 try:
                     await self.api.delete_message(
@@ -126,7 +189,7 @@ class ParkBot:
         :param location: Location of the bot or None if it should be removed
         :param chat_id: Chat the location belongs to
         """
-        async with UserSettingsManager(user) as s:
+        async with UserManager(user) as s:
             if location is not None:
                 if s.auto_alert.exists:
                     try:

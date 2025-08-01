@@ -12,7 +12,7 @@ from telebot import types
 import i18n
 
 from .constants import OutputType
-from .models import UserSettingsManager
+from .models import UserManager
 from .bot import bot
 
 # --------------------------------------------------------------------------- #
@@ -93,7 +93,7 @@ async def _send_voice(self: AsyncTeleBot, chat_id: int, text: str, **kw):
     """
     voice_only: bool = kw.pop("voice_only", False)
 
-    async with UserSettingsManager(chat_id) as s:
+    async with UserManager(chat_id) as s:
         # Handle text-only users
         if s.output_type != OutputType.VOICE:
             return await _original_send_message(self, chat_id, text, **kw)
@@ -214,7 +214,7 @@ async def patched_edit_message_text(
             **kw,
         )
 
-    async with UserSettingsManager(chat_id) as s:
+    async with UserManager(chat_id) as s:
         if s.output_type != OutputType.VOICE:
             return await _original_edit_message_text(
                 self, text, chat_id=chat_id, message_id=message_id, **kw
@@ -258,7 +258,7 @@ async def patched_send_photo(self, chat_id: int, photo, *a, **kw):  # type: igno
     caption: str = kw.get("caption") or ""
 
     # Load user settings to check if voice output is enabled.
-    async with UserSettingsManager(chat_id) as s:
+    async with UserManager(chat_id) as s:
         voice_user = s.output_type == OutputType.VOICE
 
     # If voice output is enabled and a caption is present, send a voice message.

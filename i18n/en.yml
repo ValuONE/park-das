@@ -9,6 +9,7 @@ en:
     navigation: View free parking spots on a map and navigate to them.
     timer: Sends a parking recommendation at a specified point of time.
   error:
+    callback: Unknown callback!
     all_full: Unfortunately, there currently are no free parking spots!
     command_unknown: |
       Input was not recognized as a command 🚫.
@@ -24,7 +25,9 @@ en:
     msg: 🤖 Welcome to ParkBot 🚘
   location:
     btn: 📍 Send location
-    msg: Tap on „%{.btn}“ to send your current location.
+    msg: |
+      For a location-based recommendation,
+      please tap on „%{.btn}“ to send your current location.
   recommended:
     msg: |
       The recommended parking spot is:
@@ -48,13 +51,6 @@ en:
     set: "Recommendation will be sent on the 📅 %{date} at ⏰ %{time}!"
     loc_set: "Recommendation for 📍 %{loc} will be sent on the 📅 %{date} at ⏰ %{time}!"
     set_cancel: Recommendation was not set!
-    set_already: |
-      ℹ️ Recommendation is already set for ⏰ %{time} on the 📅 %{date}!
-      🔄 What should the recommendation be changed to?
-    loc_set_already: |
-      ℹ️ Recommendation for 📍 %{loc} is already set for ⏰ %{time} on the 📅 %{date}!
-      🔄 What should the recommendation be changed to?
-    set_already_cancel: Recommendation was not changed!
   automatic:
     tutorial: Please enable live location sharing to recieve automatic recommendations!
     set: Automatic recommendations activated ⛳️!
@@ -71,8 +67,8 @@ en:
     back: ◀️ Back
     undefined: Not set ❌
     options:
-      language: Language
-      language_curr: "Selected %{.language}:\t\t%{curr}"
+      userlanguage: Language
+      userlanguage_curr: "Selected %{.userlanguage}:\t\t%{curr}"
       mapprovider: Map provider
       mapprovider_curr: "Selected %{.mapprovider}:\t\t%{curr}"
       usertype: User type
@@ -92,3 +88,101 @@ en:
     language:
       de: German 🇩🇪
       en: English 🇺🇸
+  rooms:
+    undefined: ""
+    uni_west: "University West"
+    uni_ost: "University East"
+    helmholtzstrasse: "Helmholtzstraße / Administration"
+    kliniken_michelsberg: "Hospital Michelsberg"
+    o25_h1: "O25 H1"
+    o25_h2: "O25 H2"
+    n25_h3: "N25 H3"
+    o25_h4_5: "O25 H4/5"
+    o25_h7: "O25 H7"
+    n25_h8: "N25 H8"
+    n25_h9: "N25 H9"
+    m24_h10: "M24 H10"
+    n24_h11: "N24 H11"
+    n24_h12: "N24 H12"
+    n24_h13: "N24 H13"
+    n24_h14: "N24 H14"
+    n24_h15: "N24 H15"
+    n24_h16: "N24 H16"
+    o27_h20: "O27 H20"
+    o28_h21: "O28 H21"
+    o28_h22: "O28 H22"
+    m28_h2101_ttu: "M28 H2101 (TTU)"
+    h218_mikroskopiersaal: "H218 - Microscopy Room"
+    h45_1_blauer_hoersaal: "H45.1 - Blue Lecture Hall"
+    h45_2_gelber_hoersaal: "H45.2 - Yellow Lecture Hall"
+    h47_0_501_roter_hoersaal: "H47.0.501 - Red Lecture Hall"
+    hoersaal_chirurgie: "Lecture Hall Surgery"
+    hoersaal_innere_medizin: "Lecture Hall Internal Medicine"
+    n23_seminarraum_2622: "N23 Seminar Room 2622"
+    n24_seminarraum_104: "N24 Seminar Room 104"
+    n24_seminarraum_131: "N24 Seminar Room 131"
+    n24_seminarraum_155: "N24 Seminar Room 155"
+    n24_seminarraum_226: "N24 Seminar Room 226"
+    n24_seminarraum_227: "N24 Seminar Room 227"
+    n24_seminarraum_251: "N24 Seminar Room 251"
+    n24_seminarraum_252: "N24 Seminar Room 252"
+    n24_seminarraum_254: "N24 Seminar Room 254"
+    n25_seminarraum_2101: "N25 Seminar Room 2101"
+    n25_seminarraum_2102: "N25 Seminar Room 2102"
+    n25_seminarraum_2103: "N25 Seminar Room 2103"
+    o23_seminarraum_2609_10: "O23 Seminar Room 2609/10"
+    o23_seminarraum_2611: "O23 Seminar Room 2611"
+    o25_seminarraum_151: "O25 Seminar Room 151"
+    o25_seminarraum_169: "O25 Seminar Room 169"
+    o25_seminarraum_346: "O25 Seminar Room 346"
+    o27_seminarraum_121: "O27 Seminar Room 121"
+    o27_seminarraum_122: "O27 Seminar Room 122"
+    o27_seminarraum_123: "O27 Seminar Room 123"
+    o27_seminarraum_2201: "O27 Seminar Room 2201"
+    o27_seminarraum_2202: "O27 Seminar Room 2202"
+    o27_seminarraum_2203: "O27 Seminar Room 2203"
+    o28_seminarraum_2001: "O28 Seminar Room 2001"
+    o28_seminarraum_2002: "O28 Seminar Room 2002"
+    o28_seminarraum_2003: "O28 Seminar Room 2003"
+    o28_seminarraum_2004: "O28 Seminar Room 2004"
+    o29_seminarraum_1001: "O29 Seminar Room 1001"
+    o29_seminarraum_1002: "O29 Seminar Room 1002"
+    o29_seminarraum_1003: "O29 Seminar Room 1003"
+    o29_seminarraum_2001: "O29 Seminar Room 2001"
+    o29_seminarraum_2002: "O29 Seminar Room 2002"
+    o29_seminarraum_2003: "O29 Seminar Room 2003"
+    o29_seminarraum_2004: "O29 Seminar Room 2004"
+    o29_seminarraum_2005: "O29 Seminar Room 2005"
+    o29_seminarraum_2006: "O29 Seminar Room 2006"
+    o29_seminarraum_3001: "O29 Seminar Room 3001"
+    o29_seminarraum_3002: "O29 Seminar Room 3002"
+    o29_seminarraum_3003: "O29 Seminar Room 3003"
+    o29_seminarraum_3004: "O29 Seminar Room 3004"
+    srgeb_raum_2_aea_12: "SRgeb Room 2, AEA 12"
+    seminarraum_43_2_101: "Seminar Room 43.2.101"
+    seminarraum_43_2_102: "Seminar Room 43.2.102"
+    seminarraum_43_2_103: "Seminar Room 43.2.103"
+    seminarraum_43_2_104: "Seminar Room 43.2.104"
+    seminarraum_45_2_101: "Seminar Room 45.2.101"
+    seminarraum_45_2_102: "Seminar Room 45.2.102"
+    seminarraum_45_2_103: "Seminar Room 45.2.103"
+    seminarraum_47_2_101: "Seminar Room 47.2.101"
+    seminarraum_47_2_102: "Seminar Room 47.2.102"
+    seminarraum_47_2_104: "Seminar Room 47.2.104"
+    seminarraum_47_1_504: "Seminar Room 47.1.504"
+    seminarraum_47_1_506: "Seminar Room 47.1.506"
+    seminarraum_47_1_507: "Seminar Room 47.1.507"
+    seminarraum_47_1_508: "Seminar Room 47.1.508"
+    seminarraum_47_2_503: "Seminar Room 47.2.503"
+    seminarraum_47_2_505: "Seminar Room 47.2.505"
+    seminarraum_47_2_506: "Seminar Room 47.2.506"
+    seminarraum_47_2_507: "Seminar Room 47.2.507"
+    hh_18_hoersaal_120: "HH 18 - Lecture Hall 120"
+    hh_18_hoersaal_220: "HH 18 - Lecture Hall 220"
+    hh_18_hoersaal_e20: "HH 18 - Lecture Hall E20"
+    hh_18_hoersaal_e60: "HH 18 - Lecture Hall E60"
+    hh_22_praktikumsraum_1_41: "HH 22 - Practical Room 1.41"
+    hh_22_seminarraum_1_42: "HH 22 - Seminar Room 1.42"
+    hh_22_seminarraum_e_03: "HH 22 - Seminar Room E.03"
+    hh_22_seminarraum_e_04: "HH 22 - Seminar Room E.04"
+    hoersaal_e30: "Lecture Hall - E30"

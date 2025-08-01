@@ -5,8 +5,8 @@ from re import search
 
 from crawl4ai import AsyncWebCrawler, JsonCssExtractionStrategy, CrawlerRunConfig, CacheMode
 
-from .constants import CarParkNames
-from .models import CarPark, UserType
+from .constants import ParkingLotNames
+from .models import ParkingLot, UserType
 
 
 VISITOR_URL = "http://tsu-app.rrooaarr.biz/front/index.html"
@@ -80,9 +80,9 @@ config_helmholtz = config.clone(
     extraction_strategy=JsonCssExtractionStrategy(helmholtz_schema)
 )
 
-parking_data: Dict[UserType, List[CarPark]] = {}
+parking_data: Dict[UserType, List[ParkingLot]] = {}
 
-async def scrape_data(is_visitor: bool = False, scrape_all: bool = False) -> List[CarPark]:
+async def scrape_data(is_visitor: bool = False, scrape_all: bool = False) -> List[ParkingLot]:
     """
     Asynchronously fetches parking space data. This is only used for the interval
     updates of the parking spaces. Use `get_data` to retrieve the data.
@@ -113,8 +113,8 @@ async def scrape_data(is_visitor: bool = False, scrape_all: bool = False) -> Lis
 
             try:
                 data.append(
-                    CarPark(
-                        CarParkNames.parse(f"{name} {numbers}"),
+                    ParkingLot(
+                        ParkingLotNames.parse(f"{name} {numbers}"),
                         int(free_spaces),
                         int(total_spaces),
                         is_visitor
@@ -141,8 +141,8 @@ async def scrape_data(is_visitor: bool = False, scrape_all: bool = False) -> Lis
             return data
 
         data.append(
-            CarPark(
-                CarParkNames.HE,
+            ParkingLot(
+                ParkingLotNames.HE,
                 int(item.get("free_spaces", 0)),
                 int(item.get("total_spaces", 0)),
                 is_visitor
@@ -169,7 +169,7 @@ async def fetch_data():
             case _:
                 parking_data[tp] = data
 
-async def get_data(for_type: UserType) -> List[CarPark]:
+async def get_data(for_type: UserType) -> List[ParkingLot]:
     """
     Filters and retrieves parking data based on the type of user.
 

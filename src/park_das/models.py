@@ -1,4 +1,9 @@
-﻿from dataclasses import dataclass
+﻿from json import loads, dumps
+from enum import Enum
+from typing import List
+from datetime import datetime
+from dataclasses import dataclass, fields, is_dataclass
+from sqlite3 import PARSE_DECLTYPES
 
 import aiosqlite
 
@@ -7,21 +12,22 @@ from telebot.types import Location, User, InlineKeyboardMarkup
 
 import i18n
 
-from .constants import  CarParkNames, UserLanguage, UserType,\
-                        MapProvider, OutputType, InteractionStates, CAR_PARK_LOCATIONS
+from .constants import  ParkingLotNames, UserLanguage, UserType,\
+                        MapProvider, OutputType, InteractionStates, PARKING_LOT_LOCATIONS,\
+                        RoomNames, ROOM_LOCATIONS, Callbacks, Settings
 
 @dataclass
-class CarPark:
+class ParkingLot:
     """
-    Represents a car park with a name and the number of available spaces.
+    Represents a parking lot with a name and the number of available spaces.
     
     Attributes:
-        _code_name: The name of the car park, based on the CarParkNames enum.
+        _code_name: The name of the parking lot, based on the ParkingLotNames enum.
         free_spaces: The current number of available parking spaces.
         total_spaces: The total number of available parking spaces.
         is_visitor: Flag whether this is a visitor parking spot.
     """
-    _code_name: CarParkNames
+    _code_name: ParkingLotNames
     free_spaces: int
     total_spaces: int
     is_visitor: bool
@@ -39,9 +45,9 @@ class CarPark:
         :param value: Other parking spot
         :return: True if name is same
         """
-        if isinstance(value, CarPark):
+        if isinstance(value, ParkingLot):
             return self._code_name == value._code_name
-        if isinstance(value, CarParkNames):
+        if isinstance(value, ParkingLotNames):
             return self._code_name == value
         return False
 
@@ -65,11 +71,11 @@ class CarPark:
     @property
     def geo_pos(self) -> Location:
         """
-        Returns the geographic position (latitude, longitude) of the car park.
+        Returns the geographic position (latitude, longitude) of the parking lot.
 
-        :return: A telegram location containing the latitude and longitude of the car park.
+        :return: A telegram location containing the latitude and longitude of the parking lot.
         """
-        return CAR_PARK_LOCATIONS[self._code_name]
+        return PARKING_LOT_LOCATIONS[self._code_name]
 
     @property
     def almost_full(self) -> bool:
@@ -111,9 +117,10 @@ class CarPark:
 
     def to_pretty(self, lang: str, index: int | None = None) -> str:
         """
-        Formats a car park's information into a string.
+        Formats a parking lot's information into a string.
 
-        :return: A formatted string containing the car park's name, free spaces and a status icon.
+        :return: A formatted string containing the parking lot's name,\
+                 free spaces and a status icon.
         """
         return i18n.t(
             ("overview.single"
@@ -162,6 +169,47 @@ class CarPark:
 
 
 @dataclass
+class Room:
+    """
+    Represents a location with a name.
+    
+    Attributes:
+        _code_name: The name of the location, based on the RoomNames enum.
+    """
+    _code_name : RoomNames
+
+    def __eq__(self, value: object) -> bool:
+        """
+        Test for equality between locations
+
+        :param value: Other location
+        :return: True if name is same
+        """
+        if isinstance(value, Room):
+            return self._code_name == value._code_name
+        if isinstance(value, RoomNames):
+            return self._code_name == value
+        return False
+
+    def __str__(self) -> str:
+        """
+        Returns name of location
+
+        :return: Room / building name
+        """
+        return str(self._code_name)
+
+    @property
+    def geo_pos(self) -> Location:
+        """
+        Returns the geographic position (latitude, longitude) of the location.
+
+        :return: A telegram location containing the latitude and longitude of the location.
+        """
+        return ROOM_LOCATIONS[self._code_name]
+
+
+@dataclass
 class BotMessage:
     chat_id : int | None = None
     message_id : int | None = None
@@ -172,22 +220,17 @@ class BotMessage:
 
 
 @dataclass
-class RecommendationTimer:
-    time: str | None = None
-    date: str | None = None
-    loc: str | None = None
-
-    @property
-    def exists(self) -> bool:
-        return self.time is not None and self.date is not None
+class TimedRecommendation:
+    date_time: datetime | None = None
+    location: RoomNames = RoomNames.UNDEFINED
 
     @property
     def with_location(self) -> bool:
-        return self.loc is not None
+        return self.location is not None
 
 
 @dataclass
-class UserSettings:
+class UserData:
     language: UserLanguage = UserLanguage.UNDEFINED
     map_provider: MapProvider = MapProvider.UNDEFINED
     user_type: UserType = UserType.UNDEFINED
@@ -196,7 +239,7 @@ class UserSettings:
     inline_buttons: BotMessage = BotMessage()
     auto_alert: BotMessage = BotMessage()
     alert_set: bool = False
-    timer: RecommendationTimer = RecommendationTimer()
+    timer: TimedRecommendation = TimedRecommendation()
     settings_voice_id: int | None = None
 
     def __str__(self) -> str:
@@ -204,7 +247,7 @@ class UserSettings:
         return "\n".join(
             [
                 i18n.t(
-                    "settings.options.language_curr",
+                    "settings.options.userlanguage_curr",
                     locale=lang,
                     curr=i18n.t(
                         repr(self.language),
@@ -247,27 +290,74 @@ class UserSettings:
         """
         return quick_markup(
             {
-                i18n.t("settings.options.language", lang): {"callback_data" : "user_language"},
-                i18n.t("settings.options.mapprovider", lang): {"callback_data" : "map_provider"},
-                i18n.t("settings.options.usertype", lang): {"callback_data" : "user_type"},
-                i18n.t("settings.options.outputtype", lang): {"callback_data" : "output_type"}
+                i18n.t("settings.options."+s.name.lower(), lang): {
+                    "callback_data" : dumps({
+                        "type": Callbacks.SETTINGS_SELECT,
+                        "select": s.name
+                    })
+                }
+                for s in Settings
             },
             row_width=1
         )
 
+    @classmethod
+    def adapt(cls, settings: "UserData") -> bytes:
+        """Convert UserSettings to bytes using Enum values and recursive dataclass handling."""
+        def serialize(obj):
+            if isinstance(obj, Enum):
+                return obj.value
+            if isinstance(obj, datetime):
+                return obj.isoformat(timespec='minutes')
+            if is_dataclass(obj):
+                return {f.name: serialize(getattr(obj, f.name)) for f in fields(obj)}
+            if isinstance(obj, (list, tuple)):
+                return [serialize(i) for i in obj]
+            if isinstance(obj, dict):
+                return {k: serialize(v) for k, v in obj.items()}
+            return obj
 
-class UserSettingsManager:
+        return dumps(serialize(settings)).encode("utf-8")
+
+    @classmethod
+    def convert(cls, data: bytes) -> "UserData":
+        """Convert bytes back to UserSettings, rebuilding nested dataclasses and enums."""
+        raw = loads(data.decode('utf-8'))
+
+        return UserData(
+            language=UserLanguage(raw["language"]),
+            map_provider=MapProvider(raw["map_provider"]),
+            user_type=UserType(raw["user_type"]),
+            output_type=OutputType(raw["output_type"]),
+            bot_state=InteractionStates(raw["bot_state"]),
+            inline_buttons=BotMessage(**raw["inline_buttons"]),
+            auto_alert=BotMessage(**raw["auto_alert"]),
+            alert_set=raw["alert_set"],
+            timer=TimedRecommendation(
+                date_time=\
+                    datetime.fromisoformat(raw["timer"]["date_time"])\
+                    if raw["timer"]["date_time"] is not None\
+                    else None,
+                location=RoomNames.parse(raw["timer"]["location"])
+            )
+        )
+
+
+class UserManager:
     DB_PATH = "settings.db"
+    TABLE_NAME = "settings"
 
     _instance = None
     _refs = {}
 
     def __new__(cls, user: User | int | None = None):
         if cls._instance is None:
+            aiosqlite.register_adapter(UserData, UserData.adapt)
+            aiosqlite.register_converter("USERSETTINGS", UserData.convert)
             cls._instance = super().__new__(cls)
         return cls._instance
 
-    def __init__(self, user : User | int | None):
+    def __init__(self, user : User | int | None = None):
         """
         Opens database to access user information
 
@@ -280,74 +370,63 @@ class UserSettingsManager:
         else:
             self._user = None
 
-    async def _load_settings(self) -> UserSettings:
-        if self._user is None:
-            return UserSettings()
+    @property
+    async def users(self) -> List[int]:
+        """
+        Retrieve all user IDs from the specified table in the SQLite database.
 
-        async with aiosqlite.connect(UserSettingsManager.DB_PATH) as con:
-            await con.execute(
+        Args:
+            db_path (str): Path to the SQLite database file.
+            table_name (str): Name of the table to query.
+
+        Returns:
+            list: A list of all user IDs in the table.
+        """
+        async with aiosqlite.connect(
+            UserManager.DB_PATH,
+            detect_types=PARSE_DECLTYPES
+        ) as con:
+            async with con.execute(
+                f"""
+                SELECT
+                    user_id
+                FROM {UserManager.TABLE_NAME}
                 """
-                CREATE TABLE IF NOT EXISTS settings (
+            ) as cursor:
+                user_ids = [row[0] for row in await cursor.fetchall()]
+                return user_ids
+
+    async def _load_settings(self) -> UserData:
+        if self._user is None:
+            return UserData()
+
+        async with aiosqlite.connect(
+            UserManager.DB_PATH,
+            detect_types=PARSE_DECLTYPES
+        ) as con:
+            await con.execute(
+                f"""
+                CREATE TABLE IF NOT EXISTS {UserManager.TABLE_NAME} (
                     user_id INTEGER PRIMARY KEY,
-                    language TEXT NOT NULL,
-                    map_provider TEXT NOT NULL,
-                    user_type TEXT NOT NULL,
-                    output_type TEXT NOT NULL,
-                    bot_state INTEGER NOT NULL,
-                    inline_chat_id INTEGER,
-                    inline_message_id INTEGER,
-                    auto_alert_chat_id INTEGER,
-                    auto_alert_message_id INTEGER,
-                    alert_set INTEGER,
-                    timer_time TEXT,
-                    timer_date TEXT,
-                    timer_loc TEXT,
-                    settings_voice_id INTEGER
+                    settings USERSETTINGS
                 )
                 """
             )
 
             async with con.execute(
-                """
+                f"""
                 SELECT
-                    language,
-                    map_provider,
-                    user_type,
-                    output_type,
-                    bot_state,
-                    inline_chat_id,
-                    inline_message_id,
-                    auto_alert_chat_id,
-                    auto_alert_message_id,
-                    alert_set,
-                    timer_time,
-                    timer_date,
-                    timer_loc,
-                    settings_voice_id
-                FROM settings
+                    settings
+                FROM {UserManager.TABLE_NAME}
                 WHERE user_id = ?
-                """,
-                (
-                    self._user,
-                )
+                """, (self._user,)
             ) as cursor:
                 result = await cursor.fetchone()
-                return UserSettings(
-                    language=UserLanguage(result[0]),
-                    map_provider=MapProvider(result[1]),
-                    user_type=UserType(result[2]),
-                    output_type=OutputType(result[3]),
-                    bot_state=InteractionStates(result[4]),
-                    inline_buttons=BotMessage(result[5], result[6]),
-                    auto_alert=BotMessage(result[7], result[8]),
-                    alert_set=bool(result[9]),
-                    timer=RecommendationTimer(result[10], result[11], result[12]),
-                    settings_voice_id = result[13]
-                ) if result is not None else UserSettings()
+                return result[0] if result is not None else UserData()
 
-    async def __aenter__(self) -> UserSettings:
+    async def __aenter__(self) -> UserData:
         if self._user is None:
-            return UserSettings()
+            return UserData()
 
         if self._user not in self._refs:
             self._refs[self._user] = await self._load_settings()
@@ -358,46 +437,25 @@ class UserSettingsManager:
         if self._user is None:
             return False
 
-        async with aiosqlite.connect(UserSettingsManager.DB_PATH) as con:
-            settings: UserSettings = self._refs[self._user]
+        async with aiosqlite.connect(
+            UserManager.DB_PATH,
+            detect_types=PARSE_DECLTYPES
+        ) as con:
+            settings: UserData = self._refs[self._user]
+
             await con.execute(
-                """
-                INSERT OR REPLACE INTO settings (
+                f"""
+                INSERT OR REPLACE INTO {UserManager.TABLE_NAME} (
                     user_id,
-                    language,
-                    map_provider,
-                    user_type,
-                    output_type,
-                    bot_state,
-                    inline_chat_id,
-                    inline_message_id,
-                    auto_alert_chat_id,
-                    auto_alert_message_id,
-                    alert_set,
-                    timer_time,
-                    timer_date,
-                    timer_loc,
-                    settings_voice_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    settings
+                ) VALUES (?, ?)
                 """,
                 (
                     self._user,
-                    settings.language.value,
-                    settings.map_provider.value,
-                    settings.user_type.value,
-                    settings.output_type.value,
-                    settings.bot_state.value,
-                    settings.inline_buttons.chat_id,
-                    settings.inline_buttons.message_id,
-                    settings.auto_alert.chat_id,
-                    settings.auto_alert.message_id,
-                    int(settings.alert_set),
-                    settings.timer.time,
-                    settings.timer.date,
-                    settings.timer.loc,
-                    settings.settings_voice_id
+                    settings
                 )
             )
+
             await con.commit()
 
         return True

@@ -1,12 +1,29 @@
 import os
 import math
+
+from json import loads, dumps, JSONDecodeError
 from urllib.parse import urlencode
 from typing import List, Any, Tuple, Dict
 
 from telebot.types import Location
 
-from .constants import MapProvider
-from .models import CarPark
+from .constants import MapProvider, Callbacks
+from .models import ParkingLot
+
+def check_json(data: str | bytes) -> bool:
+    """
+    Check data for valid JSON
+
+    :param data: Data as string or bytes
+    :return: Flag if data is valid JSON
+    """
+    if not isinstance(data, (str, bytes)):
+        return False
+    try:
+        json_data = loads(data)
+        return json_data is not None
+    except (JSONDecodeError, ValueError):
+        return False
 
 # https://www.kompf.de/gps/distcalc.html
 def haversine_distance(l1 : Location, l2 : Location) -> float:
@@ -41,7 +58,7 @@ def build_routing_data(location : Location, provider : MapProvider) -> Dict[str,
         case MapProvider.GOOGLE:
             return { "url" : _build_googlemaps_url(location) }
         case _:
-            return { "callback_data" : "Provider not set!" }
+            return { "callback_data" : dumps({"type":Callbacks.MAP_PROVIDER_ERROR}) }
 
 # https://developers.google.com/maps/documentation/urls/get-started?hl=de#directions-action
 def _build_googlemaps_url(location : Location) -> str:
@@ -65,7 +82,7 @@ def _build_applemaps_url(location: Location) -> str:
     return f"https://maps.apple.com/?daddr={location.latitude},{location.longitude}&dirflg=d"
 
 # https://developers.google.com/maps/documentation/maps-static/start
-def static_map(markers: List[CarPark] | None = None, path: str | None = None) -> str:
+def static_map(markers: List[ParkingLot] | None = None, path: str | None = None) -> str:
     """
     Creates link to download a static map using the Google Maps API.
     The map is positioned and zoomed to show the provided locations as color coded markers.
