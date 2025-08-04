@@ -73,7 +73,7 @@ en:
       usertype: 👥 User type
       usertype_curr: "%{.usertype}: %{curr}"
       outputtype: 📋 Output type
-      outputtype_curr: "%{outputtype}: %{curr}"
+      outputtype_curr: "%{.outputtype}: %{curr}"
     usertype:
       visitor: Visitor 🙋
       student: Employee 🧑‍🔬
