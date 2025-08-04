@@ -225,8 +225,12 @@ class TimedRecommendation:
     location: RoomNames = RoomNames.UNDEFINED
 
     @property
-    def with_location(self) -> bool:
-        return self.location is not None
+    def has_timer(self) -> bool:
+        return self.date_time is not None
+
+    @property
+    def has_location(self) -> bool:
+        return self.location != RoomNames.UNDEFINED
 
 
 @dataclass

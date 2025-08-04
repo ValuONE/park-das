@@ -227,7 +227,7 @@ async def parse_time_location(
 
     # Reuse old location if not specified
     location =  parsed.location\
-                if parsed.location != RoomNames.UNDEFINED or parsed.confidence < 0.75\
+                if parsed.location != RoomNames.UNDEFINED and parsed.confidence > 0.5\
                 else existing_timer.location
 
     # Reuse old datetime if not specified
