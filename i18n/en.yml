@@ -1,13 +1,13 @@
 en:
   commands:
-    start: 🔄 Starts or restarts the bot.
-    help: ❓ Lists all available commands.
-    settings: ⚙️ View and edit available settings.
-    overview: 📊 View all parking spots and their occupancy level.
-    automatic: 🤖 Enables automatic parking recommendations on arrival.
-    recommend: 📍 Gives location-based recommendations of nearby free parking spots with navigation.
-    navigation: 🗺️ View free parking spots on a map and navigate to them.
-    timer: ⏰ Sends a parking recommendation at a specified point of time.
+    start: 🔄 Starts or resets the bot.
+    help: ❓ Lists all commands.
+    settings: ⚙️ Display and adjust settings.
+    overview: 📊 Displays parking lots and their occupancy.
+    automatic: 🤖 Set up automatic parking recommendations.
+    recommend: 📍 Parking recommendations with navigation.
+    navigation: 🗺️ Navigation to available parking lots.
+    timer: ⏰ Set up a recommendation for a specific time.
   error:
     callback: ❌ Unknown callback!
     all_full: 😕 Unfortunately, there currently are no free parking spots!
@@ -25,9 +25,8 @@ en:
     msg: 🤖 Welcome to ParkBot 🚗
   location:
     btn: 📍 Send location
-    msg: |
-      📍 For a location-based recommendation,
-      please tap on „%{.btn}“ to send your current location.
+    msg: "🧭 For a location-based recommendation,
+      please tap on „%{.btn}“ to send your current location."
   recommended:
     msg: |
       🅿️ The recommended parking spot is:
@@ -68,13 +67,13 @@ en:
     undefined: Not set ❌
     options:
       userlanguage: 🌐 Language
-      userlanguage_curr: "Selected %{.userlanguage}: %{curr}"
+      userlanguage_curr: "%{.userlanguage}: %{curr}"
       mapprovider: 🗺️ Map provider
-      mapprovider_curr: "Selected %{.mapprovider}: %{curr}"
+      mapprovider_curr: "%{.mapprovider}: %{curr}"
       usertype: 👥 User type
-      usertype_curr: "Selected %{.usertype}: %{curr}"
+      usertype_curr: "%{.usertype}: %{curr}"
       outputtype: 📋 Output type
-      outputtype_curr: "Selected %{outputtype}: %{curr}"
+      outputtype_curr: "%{outputtype}: %{curr}"
     usertype:
       visitor: Visitor 🙋
       student: Employee 🧑‍🔬

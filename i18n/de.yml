@@ -1,13 +1,13 @@
 de:
   commands:
-    start: 🔄 Startet den Bot oder setzt ihn zurück.
-    help: ❓ Listet alle verfügbaren Kommandos auf.
-    settings: ⚙️ Zeigt alle Einstellungen an und ermöglicht deren Anpassung.
-    overview: 📊 Zeigt alle Parkplätze und deren aktuelle Auslastung an.
-    automatic: 🤖 Ermöglicht automatische Parkempfehlungen bei Ankunft.
-    recommend: 📍 Gibt standortabhängige Empfehlungen zu nahen freien Parkplätzen mit Navigation.
-    navigation: 🗺️ Zeigt freie Parkplätze auf der Karte an und ermöglicht Navigation.
-    timer: ⏰ Sendet eine Parkempfehlung zu einem angegebenen Zeitpunkt.
+    start: 🔄 Startet oder setzt den Bot zurück.
+    help: ❓ Listet alle Kommandos auf.
+    settings: ⚙️ Einstellungen anzeigen & anpassen.
+    overview: 📊 Parkplätze mit Auslastung anzeigen.
+    automatic: 🤖 Automatische Parkempfehlungen einrichten.
+    recommend: 📍 Parkplatzempfehlungen mit Navigation.
+    navigation: 🗺️ Navigation zu freien Parkplätzen.
+    timer: ⏰ Empfehlung zu festem Zeitpunkt einrichten.
   error:
     callback: ❌ Unbekannter Callback!
     all_full: 😕 Leider sind aktuell keine Parkplätze frei!
@@ -25,9 +25,8 @@ de:
     msg: 🤖 Willkommen bei ParkBot 🚘
   location:
     btn: 📍 Standort senden
-    msg: |
-      📍 Für eine standortbasierte Empfehlung bitte auf „%{.btn}“ tippen,
-      um den aktuellen Standort zu senden.
+    msg: "🧭 Für eine standortbasierte Empfehlung bitte auf „%{.btn}“ tippen,
+      um den aktuellen Standort zu senden."
   recommended:
     msg: |
       🅿️ Der empfohlene Parkplatz ist:
@@ -68,13 +67,13 @@ de:
     undefined: Nicht gesetzt ❌
     options:
       userlanguage: 🌐 Sprache
-      userlanguage_curr: "Gewählte %{.userlanguage}: %{curr}"
+      userlanguage_curr: "%{.userlanguage}: %{curr}"
       mapprovider: 🗺️ Kartenanbieter
-      mapprovider_curr: "Gewählter %{.mapprovider}: %{curr}"
+      mapprovider_curr: "%{.mapprovider}: %{curr}"
       usertype: 👥 Nutzertyp
-      usertype_curr: "Gewählter %{.usertype}: %{curr}"
+      usertype_curr: "%{.usertype}: %{curr}"
       outputtype: 📋 Ausgabeformat
-      outputtype_curr: "Gewähltes %{.outputtype}: %{curr}"
+      outputtype_curr: "%{.outputtype}: %{curr}"
     usertype:
       visitor: Besucher 🙋
       student: Mitarbeiter 🧑‍🔬
