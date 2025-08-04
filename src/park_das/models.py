@@ -119,6 +119,8 @@ class ParkingLot:
         """
         Formats a parking lot's information into a string.
 
+        :param lang: Language of the returned string.
+        :param index: Optional index of the parking lot.
         :return: A formatted string containing the parking lot's name,\
                  free spaces and a status icon.
         """
@@ -211,6 +213,9 @@ class Room:
 
 @dataclass
 class BotMessage:
+    """
+    Represents a message sent by the bot.
+    """
     chat_id : int | None = None
     message_id : int | None = None
 
@@ -221,6 +226,9 @@ class BotMessage:
 
 @dataclass
 class TimedRecommendation:
+    """
+    Represents a timer set by the user, consisting of time and / or location
+    """
     date_time: datetime | None = None
     location: RoomNames = RoomNames.UNDEFINED
 
@@ -235,6 +243,9 @@ class TimedRecommendation:
 
 @dataclass
 class UserData:
+    """
+    Represents a user's preferences, state and persistent data
+    """
     language: UserLanguage = UserLanguage.UNDEFINED
     map_provider: MapProvider = MapProvider.UNDEFINED
     user_type: UserType = UserType.UNDEFINED
@@ -288,9 +299,10 @@ class UserData:
     @classmethod
     def markup_buttons(cls, lang : str) -> InlineKeyboardMarkup:
         """
-        Creates inline buttons to attach to a message
+        Creates inline buttons for user adjustable preferences
 
-        :return: A predefined set of inline buttons
+        :param lang: Language of the inline button strings
+        :return: A set of inline buttons
         """
         return quick_markup(
             {
@@ -307,7 +319,12 @@ class UserData:
 
     @classmethod
     def adapt(cls, settings: "UserData") -> bytes:
-        """Convert UserSettings to bytes using Enum values and recursive dataclass handling."""
+        """
+        Convert UserSettings to bytes using Enum values and recursive dataclass handling.
+
+        :param settings: UserData to be converted to bytes
+        :return: Bytes containing the user's data
+        """
         def serialize(obj):
             if isinstance(obj, Enum):
                 return obj.value
@@ -325,7 +342,12 @@ class UserData:
 
     @classmethod
     def convert(cls, data: bytes) -> "UserData":
-        """Convert bytes back to UserSettings, rebuilding nested dataclasses and enums."""
+        """
+        Convert bytes back to UserSettings, rebuilding nested dataclasses and enums.
+
+        :param data: The data in bytes to be converted
+        :return: The resulting UserData
+        """
         raw = loads(data.decode('utf-8'))
 
         return UserData(
@@ -377,14 +399,9 @@ class UserManager:
     @property
     async def users(self) -> List[int]:
         """
-        Retrieve all user IDs from the specified table in the SQLite database.
+        Retrieves all user IDs from the SQLite database.
 
-        Args:
-            db_path (str): Path to the SQLite database file.
-            table_name (str): Name of the table to query.
-
-        Returns:
-            list: A list of all user IDs in the table.
+        :return: A list of all user IDs in the table
         """
         async with aiosqlite.connect(
             UserManager.DB_PATH,

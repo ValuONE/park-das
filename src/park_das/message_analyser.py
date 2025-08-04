@@ -7,7 +7,7 @@ import dateparser
 from pydantic import BaseModel, Field, ValidationError
 
 from google import genai
-from google.genai import types
+from google.genai import types, errors
 
 import i18n
 
@@ -125,11 +125,14 @@ async def parse_command(message_text : str | None) -> BotCommands:
         temperature=0
     )
 
-    response = await _genai_client.aio.models.generate_content(
-        model="gemini-2.0-flash",
-        contents=message_text,
-        config=command_conf
-    )
+    try:
+        response = await _genai_client.aio.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=message_text,
+            config=command_conf
+        )
+    except errors.APIError as e:
+        raise ConnectionError("Gemini could not generate a response!") from e
 
     return BotCommands.parse(response.text)
 
@@ -208,11 +211,14 @@ async def parse_time_location(
         temperature=0
     )
 
-    response = await _genai_client.aio.models.generate_content(
-        model="gemini-2.0-flash",
-        contents=message_text,
-        config=command_conf
-    )
+    try:
+        response = await _genai_client.aio.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=message_text,
+            config=command_conf
+        )
+    except errors.APIError as e:
+        raise ConnectionError("Gemini could not generate a response!") from e
 
     parsed = _ParsedTimeAndLocation.model_construct()
 
