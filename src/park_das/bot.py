@@ -12,6 +12,10 @@ from .models import UserManager, BotMessage, TimedRecommendation
 from .constants import RoomNames
 
 class ParkBot:
+    """
+    Represents an interface with the telegram API.
+    Provides convient functions to ensure consistency of buttons, live locations and so on.
+    """
 
     def __init__(self) -> None:
         try:

@@ -7,7 +7,7 @@ import dateparser
 from pydantic import BaseModel, Field, ValidationError
 
 from google import genai
-from google.genai import types
+from google.genai import types, errors
 
 import i18n
 
@@ -36,6 +36,15 @@ class _ParsedTimeAndLocation(BaseModel):
             "or RoomNames.UNDEFINED if the message did not contain location information."
         ),
         default=RoomNames.UNDEFINED
+    )
+    confidence: float = Field(
+        description=(
+            "A confidence estimate that a location is correct, ranging from 0 to 1,"
+            "when a location was parsed. 1 means absolute confidence, 0 means complete guess."
+        ),
+        ge=0.0,
+        le=1.0,
+        default=0.0
     )
     cancel: bool = Field(
         description=(
@@ -68,23 +77,30 @@ async def parse_command(message_text : str | None) -> BotCommands:
 
         Here are the available commands and their descriptions:
 
-        Navigation: Sends an interactive map of recommended parking lots, which the user can use to navigate to a parking spot.
-        Timer: Controls scheduled parking recommendations to be sent at a given time, optionally for specific locations.
-        Automatic: Explains how to set up automatic parking recommendations, which are sent each time the user arrives on location.
-        Recommend: Recommends the best parking lot close to the user's current location, or a location the user explicitly specified.
-        Overview: Shows all existing parking lots on a map, with occupancy level, regardless of the user's location.
-        Unknown: Catch-all, asks user for clarification if no other command matches.
+        Navigation: Sends a map with markers for parking lots that are not fully occupied, so the user can find a parking spot at a glance.
+                    Additionally, buttons with navigation links to those parking lots are made available to the user, for quick & easy navigation.
+        Timer:      Controls scheduling parking recommendations to be sent at a given time, optionally for specific locations.
+                    The user may also want to reschedule, change or cancel an existing scheduled recommendation.
+        Automatic:  Explains to the user how to set up automatic, location-based parking recommendations.
+                    These require sharing the user's live location and are sent each time the user arrives on location.
+        Recommend:  Recommends the best parking lot close to the user's current location, or a location the user explicitly specified.
+                    Used when the user wants a recommendation immediately, so it should not be selected when there is time information present.
+        Overview:   Shows all existing parking lots on a map, with occupancy level, regardless of the user's location.
+                    Does not provide a way for the user to navigate to a parking lot and even lists fully occupied parking lots.
+        Unknown:    Catch-all when no other command matches.
 
         Here are a few examples prompts for each command:
 
         Navigation:
-            - "Where are available parking lot?"
+            - "Where are available parking lots?"
             - "I need directions, where can I park?"
-            - "Which options for parking do I have on campus?"
+            - "Which options for parking do I have?"
+            - "Show me good parking spots."
         Timer:
             - "I will be on campus in 15 minutes."
             - "Tomorrow morning I will be in Ulm around 9."
             - "I need a parking spot when I arrive in half an hour."
+            - "Recommend me a parking spot tomorrow morning."
             - "Cancel my recommendation tomorrow."
             - "I will arrive 10 minutes later."
         Automatic:
@@ -96,7 +112,7 @@ async def parse_command(message_text : str | None) -> BotCommands:
             - "Is there a parking spot near O27?"
             - "Where is my best option to park currently?"
         Overview:
-            - "How full are the parking spots currently?"
+            - "How full are the parking lots currently?"
             - "Show me all options for parking on campus."
             - "What is the parking situation like currently?"
         Unknown:
@@ -109,11 +125,14 @@ async def parse_command(message_text : str | None) -> BotCommands:
         temperature=0
     )
 
-    response = await _genai_client.aio.models.generate_content(
-        model="gemini-2.0-flash",
-        contents=message_text,
-        config=command_conf
-    )
+    try:
+        response = await _genai_client.aio.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=message_text,
+            config=command_conf
+        )
+    except errors.APIError as e:
+        raise ConnectionError("Gemini could not generate a response!") from e
 
     return BotCommands.parse(response.text)
 
@@ -155,6 +174,7 @@ async def parse_time_location(
         or buildings such as "University West", "Administration".
         If there clearly is location information present which cannot be matched directly,
         then use your best judgement to determine a best match.
+        Always provide a confidence value for this estimation, ranging from 0-1.
 
         If no location information is present, the location should be RoomNames.UNDEFINED.
 
@@ -165,37 +185,40 @@ async def parse_time_location(
         The current scheduled event is {existing_timer.date_time.isoformat(timespec='minutes')
         if existing_timer.date_time is not None else "not set"} for the location {existing_timer.location.name}.
 
-        Here are some examples of the expected output ("message": "timestamp", "location", "cancel"):
+        Here are some examples of the expected output ("message": "time_estimate", "location", "confidence", "cancel"):
 
         "I will be on campus in half an hour":
-            "2025-06-16T10:26:00", "RoomNames.UNI_OST", "False" (assuming it is 2025-06-16T09:56:00)
+            "2025-06-16T10:26:00", "RoomNames.UNI_OST", "0.5", "False" (assuming it is 2025-06-16T09:56:00)
         "I need a parking spot near H20 tomorrow morning":
-            "2025-06-15T09:00:00", "RoomNames.O27_H20", "False" (assuming it is 2025-06-14T17:30:00)
+            "2025-06-15T09:00:00", "RoomNames.O27_H20", "1.0", "False" (assuming it is 2025-06-14T17:30:00)
         "Send me recommendations when I arrive at ten":
-            "2025-06-13T10:00:00", "RoomNames.UNDEFINED", "False" (assuming it is 2025-06-13T08:30:00)
+            "2025-06-13T10:00:00", "RoomNames.UNDEFINED", "0.0", "False" (assuming it is 2025-06-13T08:30:00)
         "I should arrive in 15 minutes":
-            "2025-06-10T07:57:00", "RoomNames.UNDEFINED", "False" (assuming it is 2025-06-10T07:42:00)
+            "2025-06-10T07:57:00", "RoomNames.UNDEFINED", "0.0", "False" (assuming it is 2025-06-10T07:42:00)
         "I need a parking spot for my exercise in 2103 in 20 minutes":
-            "2025-06-08T14:24:00", "RoomNames.N25_SEMINARRAUM_2103", "False" (assuming it is 2025-06-08T14:04:00)
+            "2025-06-08T14:24:00", "RoomNames.N25_SEMINARRAUM_2103", "1.0", "False" (assuming it is 2025-06-08T14:04:00)
         "Actually, I will arrive 10 minutes later"
-            "2025-06-19T14:17:00", "RoomNames.UNI_OST", "False" (assuming existing scheduled event "2025-06-19T14:07:00", "RoomNames.UNI_OST")
+            "2025-06-19T14:17:00", "RoomNames.UNI_OST", "1.0", "False" (assuming existing scheduled event "2025-06-19T14:07:00", "RoomNames.UNI_OST")
         "What's the wheater like in Ulm":
-            "None", "RoomNames.UNDEFINED", "False"
+            "None", "RoomNames.UNDEFINED", "0.0", "False"
         "Cancel the recommendation":
-            "None", "RoomNames.UNDEFINED", "True"
+            "None", "RoomNames.UNDEFINED", "0.0", "True"
         "I do not want to be sent a recommendation":
-            "None", "RoomNames.UNDEFINED", "True"
+            "None", "RoomNames.UNDEFINED", "0.0", "True"
         """,
         response_mime_type="application/json",
         response_schema=_ParsedTimeAndLocation,
         temperature=0
     )
 
-    response = await _genai_client.aio.models.generate_content(
-        model="gemini-2.0-flash",
-        contents=message_text,
-        config=command_conf
-    )
+    try:
+        response = await _genai_client.aio.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=message_text,
+            config=command_conf
+        )
+    except errors.APIError as e:
+        raise ConnectionError("Gemini could not generate a response!") from e
 
     parsed = _ParsedTimeAndLocation.model_construct()
 
@@ -210,7 +233,7 @@ async def parse_time_location(
 
     # Reuse old location if not specified
     location =  parsed.location\
-                if parsed.location != RoomNames.UNDEFINED\
+                if parsed.location != RoomNames.UNDEFINED and parsed.confidence > 0.5\
                 else existing_timer.location
 
     # Reuse old datetime if not specified

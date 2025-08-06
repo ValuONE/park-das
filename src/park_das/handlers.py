@@ -9,7 +9,7 @@ from telebot import types, util, formatting
 import i18n
 
 from .scrapper import get_data
-from .models import UserManager, UserData, Room
+from .models import UserManager, UserData, Room, TimedRecommendation
 from .constants import  MapProvider, UserType, UserLanguage, OutputType, \
                         InteractionStates, RoomNames, Callbacks, Settings, BotCommands
 from .util import haversine_distance, build_routing_data, static_map, check_json
@@ -201,17 +201,20 @@ async def recommend_handler(message: types.Message):
     """
     Handler for the /recommend command.
     Requests the location from the user in a reply keyboard.
+    If a location was specified, recommends a parking lot nearby it instead.
     """
     async with UserManager(message.from_user) as s:
         s.bot_state = InteractionStates.IDLE
 
         # Check if user wants a recommendation for a specific location
-        parsed_loc =    (await parse_time_location(message.text, s.timer)).location\
-                        if s.timer.location == RoomNames.UNDEFINED\
-                        else s.timer.location
-        if parsed_loc != RoomNames.UNDEFINED:
+        parsed = TimedRecommendation()
+        parsed = await parse_time_location(message.text, parsed)
+        if parsed.has_location:
+            # Switch to timer command if time information is present
+            if parsed.has_timer:
+                return await timed_recommendation_handler(message)
             # Get the location, pass to location handler
-            message.location = Room(parsed_loc).geo_pos
+            message.location = Room(parsed.location).geo_pos
             await location_handler(message)
         else:
             # If no location information was available, ask for user's location
