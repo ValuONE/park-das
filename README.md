@@ -1,4 +1,4 @@
-# 🚗 ParkDas – Multimodal Parking Assistant for Ulm University
+# 🚗 ParkDas – Multimodal Parking Assistant
 
 [![Lint](https://github.com/ValuONE/park-das/actions/workflows/lint.yml/badge.svg?branch=dev)](https://github.com/ValuONE/park-das/actions/workflows/lint.yml)
 [![Python 3.10](https://img.shields.io/badge/python-3.10-3776AB?logo=python&logoColor=white)](https://www.python.org/downloads/release/python-3100/)
