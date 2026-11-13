@@ -143,3 +143,7 @@ Missing translations raise an error on purpose, so incomplete language files are
 - Valentin Piendl
 
 Developed as a student project at **Ulm University**.
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
