@@ -116,11 +116,10 @@ User settings are stored in a local SQLite file, `settings.db`.
 
 ## 🧹 Code quality
 
-The project is linted with **Pylint** (configuration in `.pylintrc`). The GitLab CI pipeline
-(`.gitlab-ci.yml`) runs it on every push:
+The project is linted with **Pylint** (configuration in `.pylintrc`).
 
 ```bash
-poetry run pylint **/*.py
+poetry run pylint "**/*.py"
 ```
 
 ## 🌍 Translations
