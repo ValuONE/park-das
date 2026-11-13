@@ -103,7 +103,7 @@ def static_map(markers: List[ParkingLot] | None = None, path: str | None = None)
     params.append(("size", "512x256"))
     params.append(("scale", "2"))
     params.append(("maptype", "roadmap"))
-    
+
     map_id = os.getenv("GOOGLEMAPS_MAP_ID")
     if map_id:
         params.append(("map_id", map_id))
