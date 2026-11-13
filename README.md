@@ -1,93 +1,149 @@
-# park-das
+# 🚗 ParkDas – Multimodal Parking Assistant
 
+[![Lint](https://github.com/ValuONE/park-das/actions/workflows/lint.yml/badge.svg?branch=dev)](https://github.com/ValuONE/park-das/actions/workflows/lint.yml)
+[![Python 3.10](https://img.shields.io/badge/python-3.10-3776AB?logo=python&logoColor=white)](https://www.python.org/downloads/release/python-3100/)
+[![Telegram Bot](https://img.shields.io/badge/Telegram-Bot-26A5E4?logo=telegram&logoColor=white)](https://core.telegram.org/bots)
 
+ParkDas is a Telegram bot that helps students, employees and visitors find a free parking spot at
+**Ulm University** and in **Ulm's city centre**. It pulls live occupancy data from public parking guidance
+systems and answers through text, buttons, maps, location sharing and voice, in **German** or **English**.
 
-## Getting started
+The project was built for the course *Multimodale Benutzerschnittstellen* (Multimodal User Interfaces)
+at Ulm University in the 2025 summer semester.
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## ✨ Features
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+| Command | What it does |
+|---|---|
+| `/start` | Starts or resets the bot and shows the welcome and help messages. |
+| `/help` | Lists all available commands. |
+| `/overview` | Shows every parking lot on a map with its current occupancy, split into campus and city. |
+| `/navigation` | Shows a map of lots that still have free spaces, with one navigation button per lot. |
+| `/recommend` | Recommends the closest lot that isn't full, based on your current location or a room you name (e.g. *"Is there a parking spot near O27?"*). |
+| `/timer` | Schedules a recommendation for a later time, optionally for a specific room (e.g. *"I'll be at H20 tomorrow at 9"*). Can also reschedule or cancel. |
+| `/automatic` | Explains how to share your **live location**. The bot then sends a recommendation automatically when you get close to campus. |
+| `/settings` | Sets language, map provider (Google / Apple Maps), user type and output type. |
 
-## Add your files
+### Multimodal interaction
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+- **Natural-language input:** you don't need slash commands. Free text is mapped to the right command by
+  Google Gemini, which also pulls out times and known rooms (lecture halls, seminar rooms and clinics) from
+  the message.
+- **Voice input:** Telegram voice messages are transcribed locally with
+  [OpenAI Whisper](https://github.com/openai/whisper) and then handled like text input.
+- **Voice output:** with output type *Voice*, replies are read aloud with
+  [gTTS](https://github.com/pndurette/gTTS).
+- **Maps and navigation:** static maps with colour-coded markers (Google Static Maps API), plus deep links
+  that open Google Maps or Apple Maps.
+- **Location awareness:** one-off location sharing for instant recommendations, and live location with a
+  proximity alert for automatic ones.
+- **User types:** *Visitor*, *Employee* and *Inner city* each see the parking lots that are relevant to them.
+
+## 🏗️ Architecture
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.uni-ulm.de/ccx57/park-das.git
-git branch -M main
-git push -uf origin main
+__main__.py                 Entry point: i18n setup, scheduler, bot polling
+src/park_das/
+├── bot.py                  ParkBot wrapper around the async Telegram API (commands, live locations, timers)
+├── handlers.py             Telegram handlers for all commands, locations, free text and voice
+├── message_analyser.py     Gemini-based intent classification and time/location extraction
+├── voice_support.py        Speech-to-text with Whisper (OGG → WAV via ffmpeg)
+├── output_support.py       Text-to-speech output with gTTS
+├── scrapper.py             Scrapes live parking data every minute with crawl4ai
+├── models.py               Data models and SQLite-backed user settings (aiosqlite)
+├── constants.py            Parking lots, rooms, settings enums, commands
+├── util.py                 Distance calculation, Google Maps URLs, routing helpers
+└── monkey_patch.py         Small patches for third-party libraries
+i18n/                       German and English translations (de.yml, en.yml)
+assets/                     Images used by the bot
 ```
 
-## Integrate with your tools
+**Data sources**
 
-- [ ] [Set up project integrations](https://gitlab.uni-ulm.de/ccx57/park-das/-/settings/integrations)
+- Ulm University parking guidance system (visitor and employee views)
+- [PBW](https://www.pbw.de/) parking finder (Parkhaus Helmholtzstraße)
 
-## Collaborate with your team
+## 🚀 Getting started
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+### Prerequisites
 
-## Test and Deploy
+- **Python 3.10** (the project pins `~3.10`)
+- [**Poetry**](https://python-poetry.org/) for dependency management
+- [**ffmpeg**](https://ffmpeg.org/) on your `PATH` (needed for voice messages)
+- A **Telegram bot token** from [@BotFather](https://t.me/BotFather)
+- A **Google API key** with these APIs enabled:
+  - Maps Static API
+  - Routes API
+  - Generative Language API (Gemini)
 
-Use the built-in continuous integration in GitLab.
+### Installation
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+```bash
+git clone https://github.com/ValuONE/park-das.git
+cd park-das
 
-***
+# Install dependencies
+poetry install
 
-# Editing this README
+# Install the headless browser used by crawl4ai
+poetry run crawl4ai-setup
+```
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+### Configuration
 
-## Suggestions for a good README
+Configuration is done with environment variables:
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+| Variable | Required | Description |
+|---|---|---|
+| `TELEGRAM_TOKEN` | ✅ | Token of your Telegram bot |
+| `GOOGLEMAPS_API_KEY` | ✅ | Google API key, used for Maps **and** Gemini |
+| `GOOGLEMAPS_MAP_ID` | ❌ | Map ID for a custom map style (from the Google Cloud Console). If it isn't set, the default Google style is used. |
+| `WHISPER_MODEL_SIZE` | ❌ | Whisper model: `tiny` (default), `base`, `small`, `medium` or `large` |
 
-## Name
-Choose a self-explaining name for your project.
+### Running the bot
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+Start the bot from the repository root, because translations and assets are loaded with relative paths:
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+```bash
+poetry run python __main__.py
+```
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+The bot registers its commands with Telegram, fetches parking data every minute and starts polling.
+User settings are stored in a local SQLite file, `settings.db`.
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+> 💡 Run the bot on **Linux or macOS** (on Windows, use WSL). Some parts rely on POSIX behaviour, such as
+> the ffmpeg call for voice messages and the date formatting for timers.
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+## 🧹 Code quality
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+The project is linted with **Pylint** (configuration in `.pylintrc`).
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+```bash
+poetry run pylint "**/*.py"
+```
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+## 🌍 Translations
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+All user-facing text is in `i18n/de.yml` and `i18n/en.yml`. To add a language:
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+1. Copy one of the files to `i18n/<locale>.yml` and translate the strings.
+2. Add the locale to the `UserLanguage` enum in `src/park_das/constants.py`.
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+Missing translations raise an error on purpose, so incomplete language files are caught early.
 
-## License
-For open source projects, say how it is licensed.
+## ⚠️ Limitations
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+- The parking data is scraped from public websites. If their HTML layout changes, the scraper may break.
+- The list of parking lots and rooms is specific to Ulm University and Ulm's city centre.
+
+## 👥 Authors
+
+- Alexander Epple
+- Dennis Itzel
+- Valentin Piendl
+
+Developed as a student project at **Ulm University**.
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).

@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 _MODEL_SIZE = os.getenv("WHISPER_MODEL_SIZE", "tiny")
 
 # The model is initialized lazily on first use to prevent long startup times
-_whisper_model: whisper.Whisper | None = None
+_whisper_model: whisper.Whisper | None = None # pylint: disable=invalid-name
 
 def _whisper() -> whisper.Whisper:
     """
