@@ -103,7 +103,10 @@ def static_map(markers: List[ParkingLot] | None = None, path: str | None = None)
     params.append(("size", "512x256"))
     params.append(("scale", "2"))
     params.append(("maptype", "roadmap"))
-    params.append(("map_id", "44f7ebc46b9403cff2633fe2"))
+    
+    map_id = os.getenv("GOOGLEMAPS_MAP_ID")
+    if map_id:
+        params.append(("map_id", map_id))
 
     if markers is None and path is None:
         raise ValueError("Neither markers nor path are provided!")
